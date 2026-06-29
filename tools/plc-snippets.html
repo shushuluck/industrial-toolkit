@@ -480,16 +480,21 @@ END_IF;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-
       renderSnippets(filtered);
     }
     function renderSnippets(list){
-      let html=list.map(s=>`
+      let html=list.map(s=>{
+        let ladderHtml='';
+        if(s.ladder){
+          ladderHtml='<div class="ladder-diagram" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px;overflow-x:auto;"><svg viewBox="0 0 600 120" style="width:100%;min-width:400px;">'+s.ladder+'</svg></div>';
+        }
+        return `
         <div class="card">
           <div class="card-title">
             ${s.title}
             ${s.tags.map(t=>`<span class="badge badge-primary">${t}</span>`).join(' ')}
           </div>
-          ${s.ladder?`<div class="ladder-diagram" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px;overflow-x:auto;"><svg viewBox="0 0 600 120" style="width:100%;min-width:400px;">${s.ladder}</svg></div>`:''}
+          ${ladderHtml}
           <div class="snippet" style="position:relative;">${escapeHtml(s.code)}<button class="copy-btn" onclick="copyText(this.parentElement.textContent.replace('复制','').trim(),this)" style="position:absolute;top:8px;right:8px;">复制</button></div>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
       document.getElementById('snippetList').innerHTML=html;
     }
     function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
