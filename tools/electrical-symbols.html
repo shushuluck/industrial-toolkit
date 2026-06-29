@@ -26,6 +26,21 @@
       <div class="search-box"><input type="text" id="search" placeholder="搜索符号名称、代号或描述..." oninput="filterSymbols()"></div>
       <div style="margin-top:10px;" id="catBar"></div>
     </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleUserPanel()">
+        <div class="card-title" style="margin-bottom:0;">📝 我的补充 <span id="userCount" style="font-size:12px;color:var(--text-dim);"></span></div>
+        <span id="userPanelArrow" style="color:var(--text-dim);">▼</span>
+      </div>
+      <div id="userPanel" style="display:none;margin-top:12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn btn-primary btn-sm" onclick="showAddForm()">+ 添加数据</button>
+          <button class="btn btn-outline btn-sm" onclick="exportUserData()">📥 导出JSON</button>
+          <button class="btn btn-outline btn-sm" onclick="importUserData()">📤 导入JSON</button>
+        </div>
+        <div id="userEntries"></div>
+        <div id="addForm" style="display:none;"></div>
+      </div>
+    </div>
     <div id="symbolList"></div>
   </div>
   <div class="footer">工控工具箱 — 电气符号图库</div>
@@ -92,6 +107,20 @@
       {cat:'执行器',name:'气缸',code:'CYL',desc:'气动执行元件，直线往复运动，双作用/单作用可选',svg:`<svg viewBox="0 0 80 80"><rect x="10" y="25" width="50" height="30" rx="3" fill="none" stroke="#00d4ff" stroke-width="2"/><line x1="60" y1="40" x2="75" y2="40" stroke="#00d4ff" stroke-width="3"/><circle cx="75" cy="40" r="4" fill="none" stroke="#ff6b35" stroke-width="1.5"/><line x1="0" y1="32" x2="10" y2="32" stroke="#00d4ff" stroke-width="1.5"/><line x1="0" y1="48" x2="10" y2="48" stroke="#00d4ff" stroke-width="1.5"/><text x="35" y="44" text-anchor="middle" fill="#ff6b35" font-size="9">CYL</text></svg>`},
       {cat:'执行器',name:'电磁铁',code:'Y',desc:'通电产生电磁吸力，用于制动器、电磁卡盘、电磁吸盘',svg:`<svg viewBox="0 0 80 80"><rect x="15" y="20" width="30" height="40" fill="none" stroke="#00d4ff" stroke-width="2"/><text x="30" y="45" text-anchor="middle" fill="#ff6b35" font-size="10">YA</text><line x1="45" y1="40" x2="55" y2="40" stroke="#00d4ff" stroke-width="2"/><rect x="55" y="30" width="20" height="20" fill="none" stroke="#ff6b35" stroke-width="2"/><line x1="0" y1="30" x2="15" y2="30" stroke="#00d4ff" stroke-width="2"/><line x1="0" y1="50" x2="15" y2="50" stroke="#00d4ff" stroke-width="2"/></svg>`},
     ];
+    // ========== 用户补充数据系统 ==========
+    const PAGE_ID = 'electrical-symbols';
+    const STORAGE_KEY = 'toolkit_user_data_' + PAGE_ID;
+    function getUserData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){return[]}}
+    function saveUserData(data){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
+    function addUserEntry(entry){let data=getUserData();entry._userAdded=true;entry._timestamp=new Date().toISOString();data.push(entry);saveUserData(data);return data}
+    function deleteUserEntry(index){let data=getUserData();data.splice(index,1);saveUserData(data);return data}
+    function exportUserData(){let data=getUserData();let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=PAGE_ID+'_user_data.json';a.click();URL.revokeObjectURL(url)}
+    function importUserData(){let input=document.createElement('input');input.type='file';input.accept='.json';input.onchange=function(e){let file=e.target.files[0];let reader=new FileReader();reader.onload=function(ev){try{let imported=JSON.parse(ev.target.result);if(!Array.isArray(imported))throw new Error('Invalid format');let existing=getUserData();let merged=existing.concat(imported);saveUserData(merged);showToast('导入成功，共 '+imported.length+' 条','success');location.reload()}catch(e){showToast('导入失败：文件格式错误','error')}};reader.readAsText(file)};input.click()}
+    function toggleUserPanel(){let p=document.getElementById('userPanel');let a=document.getElementById('userPanelArrow');if(p.style.display==='none'){p.style.display='block';a.textContent='▲';renderUserEntries()}else{p.style.display='none';a.textContent='▼'}}
+    function renderUserEntries(){let data=getUserData();let html='';data.forEach((d,i)=>{html+='<div class="card" style="border-left:3px solid var(--primary);padding:10px;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-primary">'+d.cat+'</span> <strong>'+d.name+'</strong> ('+d.code+') <span class="badge badge-accent" style="font-size:10px;">用户补充</span></div><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:11px;" onclick="deleteUserEntryAndRefresh('+i+')">删除</button></div></div>'});document.getElementById('userEntries').innerHTML=html||'<div style="color:var(--text-dim);font-size:13px;">暂无补充数据</div>'}
+    function deleteUserEntryAndRefresh(idx){if(!confirm('确认删除这条补充数据？'))return;deleteUserEntry(idx);renderUserEntries();document.getElementById('userCount').textContent='('+getUserData().length+'条)';filterSymbols()}
+    function showAddForm(){let f=document.getElementById('addForm');if(f.style.display==='block'){f.style.display='none';return}f.style.display='block';f.innerHTML='<div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div><label style="font-size:12px;color:var(--text-dim);">分类</label><select id="us_cat" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"><option value="基本元件">基本元件</option><option value="开关继电器">开关继电器</option><option value="电机">电机</option><option value="保护">保护</option><option value="传感器">传感器</option><option value="电源">电源</option><option value="控制器件">控制器件</option><option value="执行器">执行器</option></select></div><div><label style="font-size:12px;color:var(--text-dim);">名称</label><input id="us_name" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 电阻"></div><div><label style="font-size:12px;color:var(--text-dim);">代号</label><input id="us_code" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 R"></div></div><div style="margin-top:10px;"><label style="font-size:12px;color:var(--text-dim);">描述</label><textarea id="us_desc" rows="2" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></textarea></div><div style="margin-top:12px;display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="submitSymbolEntry()">提交</button><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'addForm\').style.display=\'none\'">取消</button></div></div>'}
+    function submitSymbolEntry(){let cat=document.getElementById('us_cat').value;let name=document.getElementById('us_name').value.trim();let code=document.getElementById('us_code').value.trim();let desc=document.getElementById('us_desc').value.trim();if(!name||!code){showToast('请填写名称和代号','error');return}addUserEntry({cat,name,code,desc,svg:''});document.getElementById('addForm').style.display='none';showToast('添加成功','success');renderUserEntries();document.getElementById('userCount').textContent='('+getUserData().length+'条)';filterSymbols()}
     let activeCat='';
     function renderCats(){
       let cats=[...new Set(symbols.map(s=>s.cat))];
@@ -102,7 +131,8 @@
     function setCat(c){activeCat=c;renderCats();filterSymbols();}
     function filterSymbols(){
       let q=document.getElementById('search').value.toLowerCase();
-      let filtered=symbols.filter(s=>{
+      let allData=symbols.concat(getUserData());
+      let filtered=allData.filter(s=>{
         let matchCat=!activeCat||s.cat===activeCat;
         let matchSearch=!q||s.name.toLowerCase().includes(q)||s.code.toLowerCase().includes(q)||(s.desc&&s.desc.toLowerCase().includes(q));
         return matchCat&&matchSearch;
@@ -110,11 +140,18 @@
       renderSymbols(filtered);
     }
     function renderSymbols(list){
-      let html=`<div class="symbol-grid">${list.map(s=>`<div class="symbol-card" onclick="copyText('${s.code}',this)">${s.svg}<div class="name">${s.name}</div><div class="code">${s.code}</div>${s.desc?`<div class="desc">${s.desc}</div>`:''}</div>`).join('')}</div>`;
+      let html=`<div class="symbol-grid">${list.map(s=>{
+        let userBadge=s._userAdded?'<div class="desc" style="color:var(--primary);font-weight:600;">用户补充</div>':'';
+        let cardStyle=s._userAdded?'style="border-color:var(--primary);"':'';
+        if(s._userAdded&&s.svg){return `<div class="symbol-card" ${cardStyle} onclick="copyText('${s.code}',this)">${s.svg}<div class="name">${s.name}</div><div class="code">${s.code}</div>${s.desc?`<div class="desc">${s.desc}</div>`:''}${userBadge}</div>`}
+        if(s._userAdded){return `<div class="symbol-card" ${cardStyle} onclick="copyText('${s.code}',this)"><svg viewBox="0 0 80 80"><rect x="15" y="15" width="50" height="50" rx="4" fill="none" stroke="var(--primary)" stroke-width="2"/><text x="40" y="45" text-anchor="middle" fill="var(--primary)" font-size="10">${s.code}</text></svg><div class="name">${s.name}</div><div class="code">${s.code}</div>${s.desc?`<div class="desc">${s.desc}</div>`:''}${userBadge}</div>`}
+        return `<div class="symbol-card" onclick="copyText('${s.code}',this)">${s.svg}<div class="name">${s.name}</div><div class="code">${s.code}</div>${s.desc?`<div class="desc">${s.desc}</div>`:''}</div>`
+      }).join('')}</div>`;
       document.getElementById('symbolList').innerHTML=html||'<div class="card" style="text-align:center;color:var(--text-dim);">未找到匹配的符号</div>';
     }
     renderCats();
     renderSymbols(symbols);
+    document.getElementById('userCount').textContent='('+getUserData().length+'条)';
   </script>
 </body>
 </html>

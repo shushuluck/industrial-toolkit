@@ -39,6 +39,21 @@
       <div class="section-label">分类筛选</div>
       <div class="filter-bar" id="catBar"></div>
     </div>
+    <div class="card" style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleUserPanel()">
+        <div class="card-title" style="margin-bottom:0;">📝 我的补充 <span id="userCount" style="font-size:12px;color:var(--text-dim);"></span></div>
+        <span id="userPanelArrow" style="color:var(--text-dim);">▼</span>
+      </div>
+      <div id="userPanel" style="display:none;margin-top:12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn btn-primary btn-sm" onclick="showAddForm()">+ 添加数据</button>
+          <button class="btn btn-outline btn-sm" onclick="exportUserData()">📥 导出JSON</button>
+          <button class="btn btn-outline btn-sm" onclick="importUserData()">📤 导入JSON</button>
+        </div>
+        <div id="userEntries"></div>
+        <div id="addForm" style="display:none;"></div>
+      </div>
+    </div>
     <div id="instList"></div>
   </div>
   <div class="footer">工控工具箱 — PLC 指令大全</div>
@@ -149,6 +164,21 @@ const instructions=[
 {name:'PULSE_OUT',brand:'通用IEC',category:'位逻辑',syntax:'自定义脉冲发生器',desc:'产生指定宽度的输出脉冲',params:[{name:'Trigger',type:'BOOL',desc:'触发信号'},{name:'PulseWidth',type:'TIME',desc:'脉冲宽度'}],example:`VAR\n  tp1: TP;\nEND_VAR\ntp1(IN:=Start, PT:=T#500MS);\nvalve := tp1.Q;  // 阀门打开500ms`,pitfalls:['脉冲宽度要根据执行机构响应时间选择','TP定时器在脉冲期间忽略重复触发','电磁阀通常需要100ms~500ms脉冲'],tags:['位逻辑','脉冲']},
 ];
 
+// ========== 用户补充数据系统 ==========
+const PAGE_ID = 'plc-instructions';
+const STORAGE_KEY = 'toolkit_user_data_' + PAGE_ID;
+function getUserData(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]')}catch(e){return[]}}
+function saveUserData(data){localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}
+function addUserEntry(entry){let data=getUserData();entry._userAdded=true;entry._timestamp=new Date().toISOString();data.push(entry);saveUserData(data);return data}
+function deleteUserEntry(index){let data=getUserData();data.splice(index,1);saveUserData(data);return data}
+function exportUserData(){let data=getUserData();let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});let url=URL.createObjectURL(blob);let a=document.createElement('a');a.href=url;a.download=PAGE_ID+'_user_data.json';a.click();URL.revokeObjectURL(url)}
+function importUserData(){let input=document.createElement('input');input.type='file';input.accept='.json';input.onchange=function(e){let file=e.target.files[0];let reader=new FileReader();reader.onload=function(ev){try{let imported=JSON.parse(ev.target.result);if(!Array.isArray(imported))throw new Error('Invalid format');let existing=getUserData();let merged=existing.concat(imported);saveUserData(merged);showToast('导入成功，共 '+imported.length+' 条','success');location.reload()}catch(e){showToast('导入失败：文件格式错误','error')}};reader.readAsText(file)};input.click()}
+function toggleUserPanel(){let p=document.getElementById('userPanel');let a=document.getElementById('userPanelArrow');if(p.style.display==='none'){p.style.display='block';a.textContent='▲';renderUserEntries()}else{p.style.display='none';a.textContent='▼'}}
+function renderUserEntries(){let data=getUserData();let html='';data.forEach((d,i)=>{html+='<div class="card" style="border-left:3px solid var(--primary);padding:10px;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-primary">'+d.brand+'</span> <strong>'+escapeHtml(d.name)+'</strong> — '+escapeHtml(d.desc)+' <span class="badge badge-accent" style="font-size:10px;">用户补充</span></div><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:11px;" onclick="deleteUserEntryAndRefresh('+i+')">删除</button></div></div>'});document.getElementById('userEntries').innerHTML=html||'<div style="color:var(--text-dim);font-size:13px;">暂无补充数据</div>'}
+function deleteUserEntryAndRefresh(idx){if(!confirm('确认删除这条补充数据？'))return;deleteUserEntry(idx);renderUserEntries();document.getElementById('userCount').textContent='('+getUserData().length+'条)';filterAll()}
+function showAddForm(){let f=document.getElementById('addForm');if(f.style.display==='block'){f.style.display='none';return}f.style.display='block';f.innerHTML='<div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div><label style="font-size:12px;color:var(--text-dim);">品牌</label><select id="ui_brand" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"><option value="通用IEC">通用IEC</option><option value="西门子">西门子</option><option value="三菱">三菱</option><option value="欧姆龙">欧姆龙</option><option value="其他">其他</option></select></div><div><label style="font-size:12px;color:var(--text-dim);">分类</label><select id="ui_category" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"><option value="位逻辑">位逻辑</option><option value="定时器">定时器</option><option value="计数器">计数器</option><option value="数学运算">数学运算</option><option value="比较">比较</option><option value="数据处理">数据处理</option><option value="移位">移位</option><option value="程序控制">程序控制</option><option value="通信">通信</option><option value="字符串">字符串</option><option value="模拟量">模拟量</option><option value="控制">控制</option></select></div><div><label style="font-size:12px;color:var(--text-dim);">指令名</label><input id="ui_name" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 MOV"></div><div><label style="font-size:12px;color:var(--text-dim);">语法</label><input id="ui_syntax" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 MOV IN, OUT"></div></div><div style="margin-top:10px;"><label style="font-size:12px;color:var(--text-dim);">描述</label><textarea id="ui_desc" rows="2" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></textarea></div><div style="margin-top:10px;"><label style="font-size:12px;color:var(--text-dim);">常见坑（每行一条）</label><textarea id="ui_pitfalls" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></textarea></div><div style="margin-top:12px;display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="submitInstructionEntry()">提交</button><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'addForm\').style.display=\'none\'">取消</button></div></div>'}
+function submitInstructionEntry(){let brand=document.getElementById('ui_brand').value;let category=document.getElementById('ui_category').value;let name=document.getElementById('ui_name').value.trim();let syntax=document.getElementById('ui_syntax').value.trim();let desc=document.getElementById('ui_desc').value.trim();let pitfalls=document.getElementById('ui_pitfalls').value.trim().split('\n').filter(s=>s.trim());if(!name){showToast('请填写指令名','error');return}addUserEntry({name,brand,category,syntax,desc,params:[],example:'',pitfalls,tags:['用户补充']});document.getElementById('addForm').style.display='none';showToast('添加成功','success');renderUserEntries();document.getElementById('userCount').textContent='('+getUserData().length+'条)';filterAll()}
+
 let activeBrand='', activeCat='';
 function getBrands(){return [...new Set(instructions.map(i=>i.brand))];}
 function getCats(){return [...new Set(instructions.map(i=>i.category))];}
@@ -175,7 +205,8 @@ function catColor(c){
 }
 function filterAll(){
   let q=document.getElementById('search').value.toLowerCase();
-  let filtered=instructions.filter(i=>{
+  let allData=instructions.concat(getUserData());
+  let filtered=allData.filter(i=>{
     let matchBrand=!activeBrand||i.brand===activeBrand;
     let matchCat=!activeCat||i.category===activeCat;
     let matchSearch=!q||[i.name,i.desc,i.syntax,i.brand,...(i.tags||[])].some(s=>s.toLowerCase().includes(q));
@@ -193,12 +224,13 @@ function renderList(list){
     html+=`<div class="section-label">${cat} (${groups[cat].length})</div>`;
     groups[cat].forEach((inst,idx)=>{
       let id='inst_'+inst.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+idx;
-      html+=`<div class="card inst-card" id="${id}" onclick="toggleInst('${id}')">
+      let userBadge=inst._userAdded?' <span class="badge badge-accent" style="font-size:10px;">用户补充</span>':'';
+      html+=`<div class="card inst-card" id="${id}" onclick="toggleInst('${id}')" ${inst._userAdded?'style="border-left:3px solid var(--primary);"':''}>
         <div class="inst-head">
           <span class="inst-arrow">▶</span>
           <span class="inst-name">${escapeHtml(inst.name)}</span>
           <span class="badge ${brandColor(inst.brand)}">${inst.brand}</span>
-          <span class="badge ${catColor(inst.category)}">${inst.category}</span>
+          <span class="badge ${catColor(inst.category)}">${inst.category}</span>${userBadge}
           <span class="inst-desc">${escapeHtml(inst.desc)}</span>
         </div>
         <div class="inst-body">
@@ -218,6 +250,7 @@ function toggleInst(id){
 }
 renderFilters();
 filterAll();
+document.getElementById('userCount').textContent='('+getUserData().length+'条)';
   </script>
 </body>
 </html>
