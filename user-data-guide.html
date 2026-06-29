@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户数据说明 | 工控工具箱</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>💾 用户数据功能说明</h2><p>本地存储 + 在线提交 — 完全掌控你的补充数据</p></div>
+
+    <div class="card">
+      <div class="card-title">📍 功能入口</div>
+      <p style="color:var(--text-dim);line-height:1.8;">每个工具页面（故障代码、PLC指令、电气符号）都有一个 <strong>「📝 我的补充」</strong> 折叠面板，点击展开后可以看到操作按钮。</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💾 方式一：保存到本地（推荐日常使用）</div>
+      <div style="color:var(--text-dim);line-height:2;">
+        <p><strong>原理：</strong>数据存储在浏览器的 localStorage 中，不上传到任何服务器。</p>
+        
+        <p><strong>添加数据：</strong></p>
+        <ol style="margin-left:20px;">
+          <li>点击 <code>+ 添加数据</code> 按钮</li>
+          <li>填写表单（品牌、代码、名称等）</li>
+          <li>点击 <code>💾 保存本地</code> 按钮</li>
+          <li>数据会立即出现在列表中，带蓝色「用户补充」标签</li>
+        </ol>
+
+        <p><strong>删除数据：</strong></p>
+        <ul style="margin-left:20px;">
+          <li>每条数据右侧有「删除」按钮，点击即可删除</li>
+        </ul>
+
+        <p><strong>⚠️ 注意事项：</strong></p>
+        <ul style="margin-left:20px;">
+          <li>数据只保存在当前浏览器中</li>
+          <li>清除浏览器缓存会丢失数据</li>
+          <li>不同浏览器/设备之间数据不互通</li>
+          <li>适合个人临时记录，不适合长期存储</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📥 方式二：导入导出 JSON（数据备份/迁移）</div>
+      <div style="color:var(--text-dim);line-height:2;">
+        <p><strong>导出 JSON：</strong></p>
+        <ol style="margin-left:20px;">
+          <li>点击 <code>📥 导出JSON</code> 按钮</li>
+          <li>浏览器会下载一个 <code>.json</code> 文件</li>
+          <li>文件包含你添加的所有本地数据</li>
+        </ol>
+
+        <p><strong>导入 JSON：</strong></p>
+        <ol style="margin-left:20px;">
+          <li>点击 <code>📤 导入JSON</code> 按钮</li>
+          <li>选择之前导出的 <code>.json</code> 文件</li>
+          <li>数据会自动合并到现有列表中</li>
+        </ol>
+
+        <p><strong>💡 使用场景：</strong></p>
+        <ul style="margin-left:20px;">
+          <li><strong>备份：</strong>换电脑前先导出，到新电脑再导入</li>
+          <li><strong>分享：</strong>导出 JSON 发给同事，同事导入即可使用</li>
+          <li><strong>跨浏览器：</strong>从 Chrome 导出，导入到 Firefox</li>
+          <li><strong>批量编辑：</strong>导出 → 用文本编辑器修改 → 重新导入</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🌐 方式三：提交到服务器（社区共享）</div>
+      <div style="color:var(--text-dim);line-height:2;">
+        <p><strong>原理：</strong>数据上传到 Cloudflare 全球网络，审核后会加入网站公共数据。</p>
+        
+        <p><strong>提交数据：</strong></p>
+        <ol style="margin-left:20px;">
+          <li>填写表单后，点击 <code>🌐 提交到服务器</code> 按钮</li>
+          <li>显示「✅ 已提交，审核后表示」成功</li>
+          <li>管理员审核通过后，数据会出现在网站公共列表中</li>
+        </ol>
+
+        <p><strong>查看在线提交：</strong></p>
+        <ol style="margin-left:20px;">
+          <li>点击 <code>🌐 在线提交</code> 按钮</li>
+          <li>查看当前已提交的待审核数据</li>
+        </ol>
+
+        <p><strong>⚠️ 注意事项：</strong></p>
+        <ul style="margin-left:20px;">
+          <li>提交后需要管理员审核才会显示</li>
+          <li>审核通过的数据会成为网站永久公共数据</li>
+          <li>请确保数据准确，避免误导他人</li>
+          <li>无需注册，无需登录，直接提交</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">❓ 常见问题</div>
+      <div style="color:var(--text-dim);line-height:2;">
+        <p><strong>Q: 本地数据存储在哪里？</strong></p>
+        <p style="margin-left:20px;">浏览器 localStorage，路径：<code>F12 → Application → Local Storage → 当前网站</code></p>
+        
+        <p><strong>Q: 数据会自动同步吗？</strong></p>
+        <p style="margin-left:20px;">不会。本地数据只在本机浏览器，不同步到其他设备。</p>
+        
+        <p><strong>Q: 清除浏览器缓存会丢失数据吗？</strong></p>
+        <p style="margin-left:20px;">会。建议定期导出 JSON 备份。</p>
+        
+        <p><strong>Q: 提交到服务器的数据可以删除吗？</strong></p>
+        <p style="margin-left:20px;">已审核入库的数据不能自助删除，需联系管理员。未审核的可以联系管理员删除。</p>
+        
+        <p><strong>Q: 为什么有些数据有蓝色边框？</strong></p>
+        <p style="margin-left:20px;">蓝色边框 + 「用户补充」标签 = 你手动添加的数据（本地存储）</p>
+        
+        <p><strong>Q: 导入的 JSON 格式不对怎么办？</strong></p>
+        <p style="margin-left:20px;">确保是数组格式，每项包含必要字段（如故障代码必须有 brand、code、name）。可参考导出的 JSON 文件结构。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 三种方式对比</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="padding:12px;text-align:left;">特性</th>
+              <th style="padding:12px;text-align:center;">💾 本地存储</th>
+              <th style="padding:12px;text-align:center;">📥 导出导入</th>
+              <th style="padding:12px;text-align:center;">🌐 在线提交</th>
+            </tr>
+          </thead>
+          <tbody style="color:var(--text-dim);">
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px;">存储位置</td>
+              <td style="padding:12px;text-align:center;">浏览器</td>
+              <td style="padding:12px;text-align:center;">本地文件</td>
+              <td style="padding:12px;text-align:center;">Cloudflare KV</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px;">需要联网</td>
+              <td style="padding:12px;text-align:center;">❌ 不需要</td>
+              <td style="padding:12px;text-align:center;">❌ 不需要</td>
+              <td style="padding:12px;text-align:center;">✅ 需要</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px;">跨设备</td>
+              <td style="padding:12px;text-align:center;">❌ 不支持</td>
+              <td style="padding:12px;text-align:center;">✅ 手动迁移</td>
+              <td style="padding:12px;text-align:center;">✅ 自动同步</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px;">数据持久性</td>
+              <td style="padding:12px;text-align:center;">⚠️ 清缓存丢失</td>
+              <td style="padding:12px;text-align:center;">✅ 永久保存</td>
+              <td style="padding:12px;text-align:center;">✅ 永久保存</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:12px;">他人可见</td>
+              <td style="padding:12px;text-align:center;">❌ 仅自己</td>
+              <td style="padding:12px;text-align:center;">❌ 仅分享对象</td>
+              <td style="padding:12px;text-align:center;">✅ 审核后公开</td>
+            </tr>
+            <tr>
+              <td style="padding:12px;">适用场景</td>
+              <td style="padding:12px;text-align:center;font-size:12px;">个人临时记录</td>
+              <td style="padding:12px;text-align:center;font-size:12px;">备份/分享/迁移</td>
+              <td style="padding:12px;text-align:center;font-size:12px;">贡献公共数据</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="background:linear-gradient(135deg,#1a2a3a,#2d3e50);border:1px solid var(--primary-dim);">
+      <div style="text-align:center;padding:20px;">
+        <div style="font-size:40px;margin-bottom:16px;">💡</div>
+        <div style="font-size:18px;font-weight:600;margin-bottom:12px;">推荐工作流</div>
+        <div style="color:var(--text-dim);line-height:2;max-width:600px;margin:0 auto;">
+          <p><strong>日常使用：</strong>直接保存到本地，快速方便</p>
+          <p><strong>定期备份：</strong>每周导出一次 JSON，保存到电脑/云盘</p>
+          <p><strong>社区贡献：</strong>遇到好用的数据，点「提交到服务器」分享给大家</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:30px;">
+      <a href="index.html" class="btn btn-primary" style="text-decoration:none;">← 返回工具箱主页</a>
+    </div>
+  </div>
+
+  <div class="footer">工控工具箱 — 用户数据功能说明</div>
+</body>
+</html>
