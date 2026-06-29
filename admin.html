@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>提交管理 | 工控工具箱</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">提交管理后台</div></div></a>
+  </div>
+
+  <div class="container fade-in">
+    <a href="index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>📋 在线提交管理</h2><p>查看、审核、删除用户提交的数据</p></div>
+
+    <!-- 登录区域 -->
+    <div id="loginArea" class="card">
+      <div class="card-title">🔐 管理员登录</div>
+      <div class="input-group">
+        <input type="password" id="adminPassword" placeholder="输入管理密码" style="width:200px;">
+        <button class="btn btn-primary" onclick="login()">登录</button>
+      </div>
+    </div>
+
+    <!-- 管理区域（登录后显示） -->
+    <div id="adminArea" style="display:none;">
+      <!-- 统计信息 -->
+      <div class="card">
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div>
+            <div class="card-title" style="margin-bottom:4px;">📊 提交统计</div>
+            <div id="statsInfo" style="color:var(--text-dim);font-size:14px;">加载中...</div>
+          </div>
+          <div style="margin-left:auto;">
+            <button class="btn btn-outline" onclick="loadSubmissions()">🔄 刷新</button>
+            <button class="btn btn-outline" style="color:var(--danger);border-color:var(--danger);" onclick="clearAll()">🗑️ 清空全部</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选 -->
+      <div class="card">
+        <div class="card-title">🔍 筛选</div>
+        <div class="input-group">
+          <select id="typeFilter" onchange="filterSubmissions()">
+            <option value="">全部类型</option>
+            <option value="fault_codes">故障代码</option>
+            <option value="plc_instructions">PLC指令</option>
+            <option value="electrical_symbols">电气符号</option>
+          </select>
+          <select id="statusFilter" onchange="filterSubmissions()">
+            <option value="">全部状态</option>
+            <option value="pending">待审核</option>
+            <option value="approved">已通过</option>
+            <option value="rejected">已拒绝</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 提交列表 -->
+      <div id="submissionsList">
+        <div class="card" style="text-align:center;color:var(--text-dim);">加载中...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">工控工具箱 — 提交管理后台</div>
+
+  <script src="js/common.js"></script>
+  <script>
+    const API_BASE = 'https://plc.14616679.xyz/api';
+    const ADMIN_KEY = 'plc_toolkit_admin_2026'; // 管理密码
+
+    let allSubmissions = [];
+
+    // 登录
+    function login() {
+      const pwd = document.getElementById('adminPassword').value;
+      if (pwd === ADMIN_KEY) {
+        sessionStorage.setItem('admin_logged', 'true');
+        document.getElementById('loginArea').style.display = 'none';
+        document.getElementById('adminArea').style.display = 'block';
+        loadSubmissions();
+      } else {
+        showToast('密码错误', 'error');
+      }
+    }
+
+    // 检查登录状态
+    function checkLogin() {
+      if (sessionStorage.getItem('admin_logged') === 'true') {
+        document.getElementById('loginArea').style.display = 'none';
+        document.getElementById('adminArea').style.display = 'block';
+        loadSubmissions();
+      }
+    }
+
+    // 加载提交数据
+    async function loadSubmissions() {
+      try {
+        const resp = await fetch(`${API_BASE}/submissions`);
+        const data = await resp.json();
+        if (data.success) {
+          allSubmissions = data.items.reverse(); // 最新的在前面
+          updateStats();
+          renderSubmissions(allSubmissions);
+        }
+      } catch (e) {
+        showToast('加载失败: ' + e.message, 'error');
+      }
+    }
+
+    // 更新统计
+    function updateStats() {
+      const total = allSubmissions.length;
+      const pending = allSubmissions.filter(i => i.status === 'pending').length;
+      const approved = allSubmissions.filter(i => i.status === 'approved').length;
+      const rejected = allSubmissions.filter(i => i.status === 'rejected').length;
+
+      document.getElementById('statsInfo').innerHTML = `
+        共 <strong>${total}</strong> 条提交，
+        <span style="color:var(--warn);">待审核 ${pending}</span>，
+        <span style="color:var(--success);">已通过 ${approved}</span>，
+        <span style="color:var(--danger);">已拒绝 ${rejected}</span>
+      `;
+    }
+
+    // 筛选
+    function filterSubmissions() {
+      const type = document.getElementById('typeFilter').value;
+      const status = document.getElementById('statusFilter').value;
+
+      let filtered = allSubmissions;
+      if (type) filtered = filtered.filter(i => i.type === type);
+      if (status) filtered = filtered.filter(i => i.status === status);
+
+      renderSubmissions(filtered);
+    }
+
+    // 渲染提交列表
+    function renderSubmissions(items) {
+      const container = document.getElementById('submissionsList');
+
+      if (items.length === 0) {
+        container.innerHTML = '<div class="card" style="text-align:center;color:var(--text-dim);">暂无提交记录</div>';
+        return;
+      }
+
+      const typeLabels = {
+        'fault_codes': '故障代码',
+        'plc_instructions': 'PLC指令',
+        'electrical_symbols': '电气符号'
+      };
+
+      const statusColors = {
+        'pending': 'var(--warn)',
+        'approved': 'var(--success)',
+        'rejected': 'var(--danger)'
+      };
+
+      const statusLabels = {
+        'pending': '待审核',
+        'approved': '已通过',
+        'rejected': '已拒绝'
+      };
+
+      container.innerHTML = items.map(item => `
+        <div class="card" style="border-left:3px solid ${statusColors[item.status] || 'var(--border)'};">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:200px;">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                <span class="badge badge-primary">${typeLabels[item.type] || item.type}</span>
+                <span class="badge" style="background:${statusColors[item.status]};color:#000;">${statusLabels[item.status] || item.status}</span>
+                <span style="font-size:11px;color:var(--text-dim);">${formatTime(item.created_at)}</span>
+              </div>
+              <div style="margin-bottom:8px;">
+                ${item.brand ? `<span class="badge badge-accent">${item.brand}</span> ` : ''}
+                ${item.code ? `<strong>${item.code}</strong> — ` : ''}
+                ${item.name || item.cat || ''}
+              </div>
+              <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">
+                ${item.desc || item.cause || item.pitfalls || ''}
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);">
+                ID: ${item.id}
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-sm" style="background:var(--success);color:#000;" onclick="approveItem('${item.id}')">✓ 通过</button>
+              <button class="btn btn-sm" style="background:var(--danger);color:#fff;" onclick="rejectItem('${item.id}')">✗ 拒绝</button>
+              <button class="btn btn-sm btn-outline" onclick="deleteItem('${item.id}')">🗑️ 删除</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 格式化时间
+    function formatTime(isoStr) {
+      if (!isoStr) return '';
+      const d = new Date(isoStr);
+      return `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // 审核通过
+    async function approveItem(id) {
+      // 这里只是标记状态，实际数据不会自动加入工具页面
+      // 需要手动复制到对应页面
+      const item = allSubmissions.find(i => i.id === id);
+      if (item) {
+        showToast(`已标记通过。请手动将数据添加到 ${getTypeLabel(item.type)} 页面`, 'success');
+        // TODO: 可以扩展 Worker 支持更新状态
+      }
+    }
+
+    // 拒绝
+    async function rejectItem(id) {
+      if (!confirm('确认拒绝这条提交？')) return;
+      showToast('已标记拒绝', 'info');
+      // TODO: 可以扩展 Worker 支持更新状态
+    }
+
+    // 删除
+    async function deleteItem(id) {
+      if (!confirm('确认删除这条提交？')) return;
+      try {
+        const resp = await fetch(`${API_BASE}/submission/${id}`, { method: 'DELETE' });
+        const data = await resp.json();
+        if (data.success) {
+          showToast('删除成功', 'success');
+          loadSubmissions(); // 刷新列表
+        }
+      } catch (e) {
+        showToast('删除失败: ' + e.message, 'error');
+      }
+    }
+
+    // 清空全部
+    async function clearAll() {
+      if (!confirm('确认清空所有提交？此操作不可恢复！')) return;
+      if (!confirm('再次确认：确定要删除所有提交吗？')) return;
+
+      try {
+        for (const item of allSubmissions) {
+          await fetch(`${API_BASE}/submission/${item.id}`, { method: 'DELETE' });
+        }
+        showToast('已清空所有提交', 'success');
+        loadSubmissions();
+      } catch (e) {
+        showToast('清空失败: ' + e.message, 'error');
+      }
+    }
+
+    // 获取类型标签
+    function getTypeLabel(type) {
+      const labels = {
+        'fault_codes': '故障代码',
+        'plc_instructions': 'PLC指令',
+        'electrical_symbols': '电气符号'
+      };
+      return labels[type] || type;
+    }
+
+    // 初始化
+    checkLogin();
+  </script>
+</body>
+</html>
