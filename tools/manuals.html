@@ -5,6 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>设备手册文档站 | 工控工具箱</title>
   <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .doc-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+    .doc-item:last-child{border-bottom:none;}
+    .doc-item:hover{background:rgba(0,212,255,0.02);}
+    .doc-info{flex:1;}
+    .doc-name{font-weight:500;font-size:14px;}
+    .doc-desc{font-size:12px;color:var(--text-dim);margin-top:2px;}
+    .doc-tags{display:flex;gap:4px;margin-top:4px;}
+    .doc-tag{font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(0,212,255,0.08);color:var(--text-muted);}
+    .cat-header{font-size:13px;font-weight:600;color:var(--primary);margin:16px 0 8px;padding-left:8px;border-left:3px solid var(--primary);}
+    .stat-bar{display:flex;gap:16px;margin:12px 0;padding:10px 16px;background:var(--bg);border-radius:6px;font-size:12px;}
+    .stat-bar span{color:var(--text-dim);}
+    .stat-bar strong{color:var(--primary);}
+  </style>
 </head>
 <body>
   <div class="header">
@@ -12,94 +26,262 @@
   </div>
   <div class="container fade-in">
     <a href="../index.html" class="back-link">← 返回主页</a>
-    <div class="tool-header"><h2>📚 设备手册文档站</h2><p>常见 PLC / 变频器 / 伺服手册快速入口</p></div>
+    <div class="tool-header"><h2>📚 设备手册文档站</h2><p>PLC / 变频器 / 伺服 / HMI / 传感器手册快速入口，按品牌和型号搜索</p></div>
+
     <div class="card">
-      <div class="search-box"><input type="text" id="search" placeholder="搜索品牌或型号..." oninput="filterDocs()"></div>
+      <div class="search-box"><input type="text" id="search" placeholder="搜索品牌、型号、手册名称..." oninput="filterDocs()" style="font-size:15px;"></div>
       <div style="margin-top:10px;" id="brandBar"></div>
+      <div style="margin-top:6px;" id="catBar"></div>
+      <div class="stat-bar" id="statBar"></div>
     </div>
+
     <div id="docList"></div>
+
+    <div class="card" style="margin-top:16px;">
+      <div class="card-title">💡 手册查找技巧</div>
+      <table>
+        <tr><th style="width:120px;">品牌</th><th>官方手册下载入口</th></tr>
+        <tr><td>西门子</td><td><a href="https://support.industry.siemens.com" target="_blank" style="color:var(--primary);">support.industry.siemens.com</a> → 搜索型号 → 文档</td></tr>
+        <tr><td>三菱</td><td><a href="https://www.mitsubishielectric.com/fa/" target="_blank" style="color:var(--primary);">mitsubishielectric.com/fa</a> → 产品 → 手册下载</td></tr>
+        <tr><td>欧姆龙</td><td><a href="https://www.ia.omron.com/" target="_blank" style="color:var(--primary);">ia.omron.com</a> → 产品 → 技术文档</td></tr>
+        <tr><td>AB</td><td><a href="https://literature.rockwellautomation.com/" target="_blank" style="color:var(--primary);">literature.rockwellautomation.com</a></td></tr>
+        <tr><td>台达</td><td><a href="https://www.deltaww.com/" target="_blank" style="color:var(--primary);">deltaww.com</a> → 产品 → 下载中心</td></tr>
+        <tr><td>汇川</td><td><a href="https://www.inovance.com/" target="_blank" style="color:var(--primary);">inovance.com</a> → 产品中心 → 资料下载</td></tr>
+        <tr><td>信捷</td><td><a href="https://www.xinje.com/" target="_blank" style="color:var(--primary);">xinje.com</a> → 服务与支持 → 资料下载</td></tr>
+        <tr><td>永宏</td><td><a href="https://www.fatek.com/" target="_blank" style="color:var(--primary);">fatek.com</a> → 下载中心</td></tr>
+      </table>
+    </div>
   </div>
   <div class="footer">工控工具箱 — 设备手册文档站</div>
   <script src="../js/common.js"></script>
   <script>
     const docs=[
+      // ==================== 西门子 PLC ====================
       {brand:'西门子',category:'PLC',items:[
-        {name:'S7-1200 系统手册',desc:'CPU 1211C/1212C/1214C/1215C/1217C 完整技术参数',url:'https://support.industry.siemens.com/cs/document/109799965'},
-        {name:'S7-1500 系统手册',desc:'高性能 CPU 系列，含 ET200SP/MP',url:'https://support.industry.siemens.com/cs/document/109478424'},
-        {name:'TIA Portal V18 操作手册',desc:'编程软件完整操作指南',url:'https://support.industry.siemens.com/cs/document/109822762'},
-        {name:'S7-200 SMART 手册',desc:'经济型 PLC，替代 S7-200',url:'https://support.industry.siemens.com/cs/document/109478591'},
+        {name:'S7-1200 系统手册',desc:'CPU 1211C/1212C/1214C/1215C/1217C 硬件安装与接线',url:'https://support.industry.siemens.com/cs/document/109799965',tags:['入门','硬件']},
+        {name:'S7-1200 编程手册',desc:'LAD/FBD/STL/SCL 编程指南，指令集参考',url:'https://support.industry.siemens.com/cs/document/109478527',tags:['编程','指令']},
+        {name:'S7-1200 通信手册',desc:'PROFINET/Modbus TCP/自由口通信配置',url:'https://support.industry.siemens.com/cs/document/109478528',tags:['通信','Modbus']},
+        {name:'S7-1500 系统手册',desc:'CPU 1511/1513/1515/1516/1517/1518 完整技术参数',url:'https://support.industry.siemens.com/cs/document/109478424',tags:['高性能','硬件']},
+        {name:'S7-1500 运动控制手册',desc:'S7-1500T 工艺功能，运动控制入门',url:'https://support.industry.siemens.com/cs/document/109799966',tags:['运动控制','工艺']},
+        {name:'S7-200 SMART 系统手册',desc:'经济型 PLC，ST20/ST30/ST40/ST60',url:'https://support.industry.siemens.com/cs/document/109478591',tags:['入门','经济型']},
+        {name:'S7-200 SMART 编程手册',desc:'STEP 7 Micro/WIN SMART 编程指南',url:'https://support.industry.siemens.com/cs/document/109478592',tags:['编程']},
+        {name:'S7-300/400 系统手册',desc:'经典系列，仍大量存在于现场',url:'https://support.industry.siemens.com/cs/document/109478524',tags:['经典','老系统']},
+        {name:'TIA Portal V18 操作手册',desc:'TIA 博途 V18 完整操作指南',url:'https://support.industry.siemens.com/cs/document/109822762',tags:['编程软件','TIA']},
+        {name:'TIA Portal V18 入门指南',desc:'从零开始学 TIA Portal',url:'https://support.industry.siemens.com/cs/document/109822763',tags:['入门','教程']},
+        {name:'ET200SP 分布式IO手册',desc:'PROFINET 分布式IO系统',url:'https://support.industry.siemens.com/cs/document/109478526',tags:['IO','PROFINET']},
+        {name:'LOGO! 智能逻辑控制器手册',desc:'小型自动化，8DI/4DO',url:'https://support.industry.siemens.com/cs/document/109478525',tags:['小型','入门']},
       ]},
+      // ==================== 三菱 PLC ====================
       {brand:'三菱',category:'PLC',items:[
-        {name:'FX5U 用户手册',desc:'MELSEC iQ-F 系列 CPU',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/index.html'},
-        {name:'GX Works3 操作手册',desc:'编程软件操作指南',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/gx_works3.html'},
-        {name:'FX3U 硬件手册',desc:'FX3U系列基本单元',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/fx3u.html'},
+        {name:'FX5U 用户手册 (硬件)',desc:'MELSEC iQ-F 系列 CPU 硬件规格与接线',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/index.html',tags:['iQ-F','硬件']},
+        {name:'FX5U 编程手册',desc:'ST/LAD/SFC 编程，指令集参考',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/index.html',tags:['编程','指令']},
+        {name:'FX5U 通信手册',desc:'RS-485/Ethernet/CC-Link 通信',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/index.html',tags:['通信']},
+        {name:'FX5CCPU-CM 手册',desc:'iQ-F 运动控制CPU',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/index.html',tags:['运动控制']},
+        {name:'FX3U 硬件手册',desc:'FX3U系列基本单元安装接线',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/fx3u.html',tags:['经典','硬件']},
+        {name:'FX3U 编程手册',desc:'基本指令+应用指令完整参考',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/fx3u.html',tags:['编程','指令']},
+        {name:'FX3G/FX3GC 手册',desc:'经济型基本单元',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/fx3u.html',tags:['经济型']},
+        {name:'FX3S 手册',desc:'超小型PLC，入门首选',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/fx3u.html',tags:['小型','入门']},
+        {name:'Q 系列 / iQ-R 系统手册',desc:'中大型 PLC 平台',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcr/pmerit/index.html',tags:['中大型','高性能']},
+        {name:'iQ-R 运动控制手册',desc:'多轴运动控制，SSCNET III/H',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcr/pmerit/index.html',tags:['运动控制','伺服']},
+        {name:'GX Works3 操作手册',desc:'iQ-F/iQ-R 编程软件完整操作',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/gx_works3.html',tags:['编程软件']},
+        {name:'GX Works2 操作手册',desc:'FX/Q 系列编程软件',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/gx_works3.html',tags:['编程软件','经典']},
+        {name:'GOT2000 HMI 操作手册',desc:'触摸屏画面设计与通信',url:'https://www.mitsubishielectric.com/fa/products/hmi/got/pmerit/got2000/index.html',tags:['HMI','触摸屏']},
       ]},
+      // ==================== 欧姆龙 PLC ====================
       {brand:'欧姆龙',category:'PLC',items:[
-        {name:'NX/NJ 系列编程手册',desc:'Sysmac 平台运动控制',url:'https://www.ia.omron.com/products/family/3624/'},
-        {name:'CP1E/CP1L/CP1H 手册',desc:'紧凑型 PLC 系列',url:'https://www.ia.omron.com/products/family/2401/'},
+        {name:'NX/NJ 系列编程手册',desc:'Sysmac 平台 ST/LAD 编程',url:'https://www.ia.omron.com/products/family/3624/',tags:['Sysmac','编程']},
+        {name:'NX/NJ 运动控制手册',desc:'多轴同步运动控制',url:'https://www.ia.omron.com/products/family/3624/',tags:['运动控制']},
+        {name:'NX1P2 硬件手册',desc:'紧凑型机器控制器',url:'https://www.ia.omron.com/products/family/3624/',tags:['紧凑型','硬件']},
+        {name:'CP1E 硬件手册',desc:'经济型 CPU，入门级',url:'https://www.ia.omron.com/products/family/2401/',tags:['经济型','入门']},
+        {name:'CP1L 硬件手册',desc:'标准型内置IO',url:'https://www.ia.omron.com/products/family/2401/',tags:['标准型']},
+        {name:'CP1H 硬件手册',desc:'高速计数+脉冲输出',url:'https://www.ia.omron.com/products/family/2401/',tags:['高速','定位']},
+        {name:'CJ2M 系统手册',desc:'中型 PLC，模块化',url:'https://www.ia.omron.com/products/family/2356/',tags:['中型','模块化']},
+        {name:'CJ2H 系统手册',desc:'高速中型 PLC',url:'https://www.ia.omron.com/products/family/2356/',tags:['高速']},
+        {name:'CS1/CJ1 编程手册',desc:'经典系列指令参考',url:'https://www.ia.omron.com/products/family/2356/',tags:['经典','指令']},
+        {name:'CX-Programmer 操作手册',desc:'编程软件操作指南',url:'https://www.ia.omron.com/products/family/3677/',tags:['编程软件']},
+        {name:'Sysmac Studio 操作手册',desc:'NX/NJ 统一开发环境',url:'https://www.ia.omron.com/products/family/3677/',tags:['编程软件','Sysmac']},
+        {name:'NB 系列 HMI 手册',desc:'触摸屏画面设计',url:'https://www.ia.omron.com/products/family/3387/',tags:['HMI']},
       ]},
+      // ==================== AB (罗克韦尔) PLC ====================
       {brand:'AB (罗克韦尔)',category:'PLC',items:[
-        {name:'CompactLogix 5380 手册',desc:'高性能紧凑型控制器',url:'https://literature.rockwellautomation.com/'},
-        {name:'Micro800 系列手册',desc:'经济型控制器',url:'https://literature.rockwellautomation.com/'},
-        {name:'Studio 5000 操作手册',desc:'编程环境完整指南',url:'https://literature.rockwellautomation.com/'},
+        {name:'CompactLogix 5380 手册',desc:'高性能紧凑型控制器 L306-L340',url:'https://literature.rockwellautomation.com/',tags:['高性能','CompactLogix']},
+        {name:'CompactLogix 5370 手册',desc:'L1/L2/L3 系列控制器',url:'https://literature.rockwellautomation.com/',tags:['CompactLogix']},
+        {name:'ControlLogix 5580 手册',desc:'大型控制器 L81-L85',url:'https://literature.rockwellautomation.com/',tags:['大型','ControlLogix']},
+        {name:'ControlLogix 5570 手册',desc:'L71-L75 控制器',url:'https://literature.rockwellautomation.com/',tags:['ControlLogix']},
+        {name:'Micro800 系列手册',desc:'Micro820/830/850/870 经济型',url:'https://literature.rockwellautomation.com/',tags:['经济型','Micro']},
+        {name:'MicroLogix 1400 手册',desc:'小型 PLC，内置I/O',url:'https://literature.rockwellautomation.com/',tags:['小型','经典']},
+        {name:'Studio 5000 Logix Designer',desc:'Logix 系列编程软件',url:'https://literature.rockwellautomation.com/',tags:['编程软件','ST']},
+        {name:'CCW (Connected Components)',desc:'Micro800 编程软件',url:'https://literature.rockwellautomation.com/',tags:['编程软件','Micro']},
+        {name:'PowerFlex 525 变频器手册',desc:'紧凑型交流变频器',url:'https://literature.rockwellautomation.com/',tags:['变频器']},
+        {name:'POINT IO 分布式手册',desc:'分布式IO模块',url:'https://literature.rockwellautomation.com/',tags:['IO','分布式']},
+        {name:'Kinetix 5500 伺服手册',desc:'EtherNet/IP 伺服驱动',url:'https://literature.rockwellautomation.com/',tags:['伺服','运动控制']},
+        {name:'PanelView Plus 7 HMI手册',desc:'触摸屏操作与画面设计',url:'https://literature.rockwellautomation.com/',tags:['HMI']},
       ]},
+      // ==================== 台达 PLC ====================
       {brand:'台达',category:'PLC',items:[
-        {name:'DVP 系列编程手册',desc:'DVP-SS/SA/SX/SL/EH 系列',url:'https://www.deltaww.com/products/automation'},
-        {name:'AS300 系列手册',desc:'中型 PLC',url:'https://www.deltaww.com/products/automation'},
+        {name:'DVP-SS/SA/SX 系列手册',desc:'标准型/模拟量/扩展型PLC',url:'https://www.deltaww.com/products/automation',tags:['标准型','DVP']},
+        {name:'DVP-SL/SL2 系列手册',desc:'薄型/超薄型PLC',url:'https://www.deltaww.com/products/automation',tags:['薄型']},
+        {name:'DVP-EH3 系列手册',desc:'高速型PLC，定位控制',url:'https://www.deltaww.com/products/automation',tags:['高速','定位']},
+        {name:'DVP-ES2/EX2 手册',desc:'经济增强型',url:'https://www.deltaww.com/products/automation',tags:['经济型']},
+        {name:'AS300 系列手册',desc:'中型 PLC，CANopen/EtherCAT',url:'https://www.deltaww.com/products/automation',tags:['中型','AS']},
+        {name:'AS200 系列手册',desc:'紧凑型中型PLC',url:'https://www.deltaww.com/products/automation',tags:['紧凑型']},
+        {name:'AH500 系列手册',desc:'大型 PLC 冗余系统',url:'https://www.deltaww.com/products/automation',tags:['大型','冗余']},
+        {name:'ISPSoft 编程手册',desc:'AS/AH 系列编程软件',url:'https://www.deltaww.com/products/automation',tags:['编程软件']},
+        {name:'WPLSoft 编程手册',desc:'DVP 系列编程软件',url:'https://www.deltaww.com/products/automation',tags:['编程软件','DVP']},
+        {name:'DOP-B 系列 HMI 手册',desc:'触摸屏画面设计',url:'https://www.deltaww.com/products/automation',tags:['HMI']},
       ]},
+      // ==================== 汇川 PLC ====================
       {brand:'汇川',category:'PLC',items:[
-        {name:'H5U 系列手册',desc:'高性能运动控制器',url:'https://www.inovance.com/product/42'},
-        {name:'AM600 系列手册',desc:'中型 PLC',url:'https://www.inovance.com/product/42'},
+        {name:'H5U 系列手册',desc:'高性能运动控制器，EtherCAT',url:'https://www.inovance.com/product/42',tags:['运动控制','EtherCAT']},
+        {name:'H3U 系列手册',desc:'标准型PLC，CANopen',url:'https://www.inovance.com/product/42',tags:['标准型']},
+        {name:'H2U 系列手册',desc:'经济型PLC',url:'https://www.inovance.com/product/42',tags:['经济型']},
+        {name:'AM600 系列手册',desc:'中型 PLC，EtherCAT',url:'https://www.inovance.com/product/42',tags:['中型']},
+        {name:'AM400 系列手册',desc:'紧凑型中型PLC',url:'https://www.inovance.com/product/42',tags:['紧凑型']},
+        {name:'AC800 系列手册',desc:'大型 PLC 冗余系统',url:'https://www.inovance.com/product/42',tags:['大型','冗余']},
+        {name:'AutoShop 编程手册',desc:'H系列编程软件',url:'https://www.inovance.com/product/42',tags:['编程软件']},
+        {name:'MD500 系列变频器手册',desc:'高性能矢量变频器',url:'https://www.inovance.com/product/41',tags:['变频器']},
+        {name:'MD810 系列变频器手册',desc:'多传变频器',url:'https://www.inovance.com/product/41',tags:['变频器','多传']},
+        {name:'IS810 系列伺服手册',desc:'高性能伺服驱动',url:'https://www.inovance.com/product/40',tags:['伺服']},
+        {name:'IT7000 系列 HMI 手册',desc:'触摸屏画面设计',url:'https://www.inovance.com/product/43',tags:['HMI']},
       ]},
+      // ==================== 信捷 PLC ====================
+      {brand:'信捷',category:'PLC',items:[
+        {name:'XD5 系列手册',desc:'高性能PLC，EtherCAT',url:'https://www.xinje.com/service/download',tags:['高性能']},
+        {name:'XD3 系列手册',desc:'标准型PLC',url:'https://www.xinje.com/service/download',tags:['标准型']},
+        {name:'XC3/XC5 系列手册',desc:'经济型PLC',url:'https://www.xinje.com/service/download',tags:['经济型','入门']},
+        {name:'XD2 系列手册',desc:'超小型PLC',url:'https://www.xinje.com/service/download',tags:['小型']},
+        {name:'XDM 系列手册',desc:'运动控制型',url:'https://www.xinje.com/service/download',tags:['运动控制']},
+        {name:'XDPPro 编程手册',desc:'编程软件操作指南',url:'https://www.xinje.com/service/download',tags:['编程软件']},
+        {name:'TG/TH 系列 HMI 手册',desc:'触摸屏操作手册',url:'https://www.xinje.com/service/download',tags:['HMI']},
+      ]},
+      // ==================== 永宏 PLC ====================
+      {brand:'永宏',category:'PLC',items:[
+        {name:'FBS 系列硬件手册',desc:'标准型/高速型PLC',url:'https://www.fatek.com/download.html',tags:['标准型','经典']},
+        {name:'FBS 运动控制手册',desc:'高速脉冲定位控制',url:'https://www.fatek.com/download.html',tags:['运动控制','定位']},
+        {name:'FBS 通信手册',desc:'RS-232/485/Ethernet通信',url:'https://www.fatek.com/download.html',tags:['通信']},
+        {name:'FBs-MA 系列手册',desc:'经济增强型PLC',url:'https://www.fatek.com/download.html',tags:['经济型']},
+        {name:'WinProLadder 编程手册',desc:'编程软件操作指南',url:'https://www.fatek.com/download.html',tags:['编程软件']},
+      ]},
+      // ==================== 基恩士 PLC ====================
+      {brand:'基恩士',category:'PLC',items:[
+        {name:'KV-8000 系列手册',desc:'高速PLC，内置数据库功能',url:'https://www.keyence.com.cn/products/automation/plc/',tags:['高速','数据库']},
+        {name:'KV-7000 系列手册',desc:'紧凑型高速PLC',url:'https://www.keyence.com.cn/products/automation/plc/',tags:['紧凑型']},
+        {name:'KV-Nano 系列手册',desc:'超小型PLC',url:'https://www.keyence.com.cn/products/automation/plc/',tags:['超小型']},
+        {name:'KV STUDIO 编程手册',desc:'KV系列编程软件',url:'https://www.keyence.com.cn/products/automation/plc/',tags:['编程软件']},
+      ]},
+      // ==================== 和利时 PLC ====================
+      {brand:'和利时',category:'PLC',items:[
+        {name:'LK 系列大型PLC手册',desc:'冗余控制系统',url:'https://www.hollysys.com/',tags:['大型','冗余','国产']},
+        {name:'LM 系列小型PLC手册',desc:'经济型小型PLC',url:'https://www.hollysys.com/',tags:['小型','国产']},
+        {name:'LE 系列紧凑型手册',desc:'嵌入式PLC',url:'https://www.hollysys.com/',tags:['嵌入式','国产']},
+      ]},
+      // ==================== 西门子 变频器 ====================
       {brand:'西门子',category:'变频器',items:[
-        {name:'G120 操作手册',desc:'模块化变频器 0.37-250kW',url:'https://support.industry.siemens.com/cs/document/109478870'},
-        {name:'V20 操作手册',desc:'紧凑型变频器 0.12-30kW',url:'https://support.industry.siemens.com/cs/document/109478560'},
-        {name:'S120 操作手册',desc:'高性能伺服驱动系统',url:'https://support.industry.siemens.com/cs/document/109478840'},
+        {name:'V20 操作手册',desc:'紧凑型变频器 0.12-30kW',url:'https://support.industry.siemens.com/cs/document/109478560',tags:['紧凑型','入门']},
+        {name:'G120 操作手册',desc:'模块化变频器 0.37-250kW',url:'https://support.industry.siemens.com/cs/document/109478870',tags:['模块化']},
+        {name:'G120C 操作手册',desc:'紧凑型功率模块',url:'https://support.industry.siemens.com/cs/document/109478871',tags:['紧凑型']},
+        {name:'G120X 操作手册',desc:'风机水泵专用变频器',url:'https://support.industry.siemens.com/cs/document/109478872',tags:['HVAC','泵类']},
+        {name:'G115D 操作手册',desc:'分布式变频器',url:'https://support.industry.siemens.com/cs/document/109478873',tags:['分布式']},
+        {name:'S120 操作手册',desc:'高性能伺服驱动系统',url:'https://support.industry.siemens.com/cs/document/109478840',tags:['伺服','高性能']},
+        {name:'S210 操作手册',desc:'伺服驱动系统',url:'https://support.industry.siemens.com/cs/document/109478841',tags:['伺服']},
+        {name:'SINAMICS Startdrive 手册',desc:'变频器调试软件',url:'https://support.industry.siemens.com/cs/document/109478842',tags:['调试软件']},
       ]},
+      // ==================== ABB 变频器 ====================
       {brand:'ABB',category:'变频器',items:[
-        {name:'ACS580 手册',desc:'通用型变频器 0.75-500kW',url:'https://library.e.abb.com/'},
-        {name:'ACS880 手册',desc:'工业传动 0.55-5600kW',url:'https://library.e.abb.com/'},
+        {name:'ACS580 手册',desc:'通用型 0.75-500kW',url:'https://library.e.abb.com/',tags:['通用型']},
+        {name:'ACS880 手册',desc:'工业传动 0.55-5600kW',url:'https://library.e.abb.com/',tags:['工业型']},
+        {name:'ACS380 手册',desc:'紧凑型 0.25-22kW',url:'https://library.e.abb.com/',tags:['紧凑型']},
+        {name:'ACS180 手册',desc:'超紧凑型 0.25-22kW',url:'https://library.e.abb.com/',tags:['超紧凑型']},
+        {name:'ACS880 多传动手册',desc:'多传动共直流母线方案',url:'https://library.e.abb.com/',tags:['多传动']},
+        {name:'ACS-AP-W 助手面板手册',desc:'控制盘操作指南',url:'https://library.e.abb.com/',tags:['面板']},
       ]},
+      // ==================== 安川 ====================
       {brand:'安川',category:'伺服',items:[
-        {name:'Σ-7 系列手册',desc:'高性能伺服驱动',url:'https://www.yaskawa.com/downloads/search'},
-        {name:'Σ-V 系列手册',desc:'经典伺服驱动',url:'https://www.yaskawa.com/downloads/search'},
+        {name:'Σ-7 系列伺服手册',desc:'高性能伺服驱动+电机',url:'https://www.yaskawa.com/downloads/search',tags:['高性能','伺服']},
+        {name:'Σ-V 系列伺服手册',desc:'经典伺服驱动',url:'https://www.yaskawa.com/downloads/search',tags:['经典','伺服']},
+        {name:'Σ-J 系列伺服手册',desc:'经济型伺服',url:'https://www.yaskawa.com/downloads/search',tags:['经济型']},
+        {name:'GA700 变频器手册',desc:'高性能矢量变频器',url:'https://www.yaskawa.com/downloads/search',tags:['变频器']},
+        {name:'GA500 变频器手册',desc:'紧凑型变频器',url:'https://www.yaskawa.com/downloads/search',tags:['变频器','紧凑型']},
+        {name:'MP3300 运动控制器手册',desc:'多轴运动控制',url:'https://www.yaskawa.com/downloads/search',tags:['运动控制']},
       ]},
+      // ==================== 汇川 变频器/伺服 ====================
       {brand:'汇川',category:'变频器',items:[
-        {name:'MD500 系列手册',desc:'高性能矢量变频器',url:'https://www.inovance.com/product/41'},
-        {name:'IS810 系列手册',desc:'伺服驱动器',url:'https://www.inovance.com/product/40'},
+        {name:'MD500 系列变频器手册',desc:'高性能矢量变频器',url:'https://www.inovance.com/product/41',tags:['矢量']},
+        {name:'MD810 系列变频器手册',desc:'多传动共母线方案',url:'https://www.inovance.com/product/41',tags:['多传动']},
+        {name:'MD280 系列变频器手册',desc:'经济型通用变频器',url:'https://www.inovance.com/product/41',tags:['经济型']},
+        {name:'MD380 系列变频器手册',desc:'高性能矢量变频器',url:'https://www.inovance.com/product/41',tags:['矢量']},
+        {name:'IS810 系列伺服手册',desc:'高性能伺服驱动',url:'https://www.inovance.com/product/40',tags:['伺服','高性能']},
+        {name:'IS620P 系列伺服手册',desc:'经济型伺服',url:'https://www.inovance.com/product/40',tags:['伺服','经济型']},
+      ]},
+      // ==================== 传感器/IO ====================
+      {brand:'倍加福',category:'传感器',items:[
+        {name:'电感式接近开关选型手册',desc:'NBN/NBN/NJ系列选型指南',url:'https://www.pepperl-fuchs.com/global/',tags:['接近开关']},
+        {name:'光电传感器选型手册',desc:'R系列/ML系列选型',url:'https://www.pepperl-fuchs.com/global/',tags:['光电']},
+        {name:'安全栅/隔离栅手册',desc:'本安回路安全栅',url:'https://www.pepperl-fuchs.com/global/',tags:['安全栅']},
+      ]},
+      {brand:'西克',category:'传感器',items:[
+        {name:'光电传感器选型手册',desc:'W10/W16/W26系列',url:'https://www.sick.com/cn/',tags:['光电']},
+        {name:'编码器选型手册',desc:'增量/绝对值编码器',url:'https://www.sick.com/cn/',tags:['编码器']},
+        {name:'安全光幕手册',desc:'deTec4安全光幕',url:'https://www.sick.com/cn/',tags:['安全光幕']},
+      ]},
+      {brand:'SMC/费斯托',category:'气动',items:[
+        {name:'SMC 气缸选型手册',desc:'标准气缸/紧凑型/无杆气缸',url:'https://www.smc.com.cn/',tags:['气缸']},
+        {name:'SMC 电磁阀选型手册',desc:'SY/VZ系列电磁阀',url:'https://www.smc.com.cn/',tags:['电磁阀']},
+        {name:'费斯托 气缸选型手册',desc:'DSBC/ADN系列',url:'https://www.festo.com.cn/',tags:['气缸']},
+        {name:'费斯托 电磁阀选型手册',desc:'VSVA/MFH系列',url:'https://www.festo.com.cn/',tags:['电磁阀']},
       ]},
     ];
+
     let activeBrand='';
-    function renderBrands(){
+    let activeCat='';
+
+    function renderFilters(){
       let brands=[...new Set(docs.map(d=>d.brand))];
-      let html=`<span class="tag" onclick="setBrand('')" style="${activeBrand===''?'background:var(--primary);color:#000;':''}">全部</span>`;
-      html+=brands.map(b=>`<span class="tag" onclick="setBrand('${b}')" style="${activeBrand===b?'background:var(--primary);color:#000;':''}">${b}</span>`).join('');
-      document.getElementById('brandBar').innerHTML=html;
+      let cats=[...new Set(docs.map(d=>d.category))];
+      let bhtml=`<span class="tag" onclick="setBrand('')" style="${activeBrand===''?'background:var(--primary);color:#000;':''}">全部品牌</span>`;
+      bhtml+=brands.map(b=>`<span class="tag" onclick="setBrand('${b}')" style="${activeBrand===b?'background:var(--primary);color:#000;':''}">${b}</span>`).join('');
+      document.getElementById('brandBar').innerHTML=bhtml;
+      let chtml=`<span class="tag" onclick="setCat('')" style="${activeCat===''?'background:var(--primary);color:#000;':''}">全部类型</span>`;
+      chtml+=cats.map(c=>`<span class="tag" onclick="setCat('${c}')" style="${activeCat===c?'background:var(--primary);color:#000;':''}">${c}</span>`).join('');
+      document.getElementById('catBar').innerHTML=chtml;
     }
-    function setBrand(b){activeBrand=b;renderBrands();filterDocs();}
+    function setBrand(b){activeBrand=b;renderFilters();filterDocs();}
+    function setCat(c){activeCat=c;renderFilters();filterDocs();}
     function filterDocs(){
       let q=document.getElementById('search').value.toLowerCase();
       let filtered=docs.filter(d=>{
         let matchBrand=!activeBrand||d.brand===activeBrand;
-        let matchSearch=!q||d.brand.toLowerCase().includes(q)||d.items.some(i=>i.name.toLowerCase().includes(q)||i.desc.toLowerCase().includes(q));
-        return matchBrand&&matchSearch;
+        let matchCat=!activeCat||d.category===activeCat;
+        let allText=d.brand+' '+d.category+' '+d.items.map(i=>i.name+' '+i.desc+' '+(i.tags||[]).join(' ')).join(' ');
+        let matchSearch=!q||allText.toLowerCase().includes(q);
+        return matchBrand&&matchCat&&matchSearch;
       });
+      let totalItems=filtered.reduce((s,d)=>s+d.items.length,0);
+      document.getElementById('statBar').innerHTML=`<span>匹配: <strong>${filtered.length}</strong> 个品牌</span><span>手册: <strong>${totalItems}</strong> 份</span><span>总计: <strong>${docs.reduce((s,d)=>s+d.items.length,0)}</strong> 份手册</span>`;
       renderDocs(filtered);
     }
     function renderDocs(list){
-      let html=list.map(d=>`
+      if(!list.length){document.getElementById('docList').innerHTML='<div class="card" style="text-align:center;color:var(--text-dim);padding:40px;">未找到匹配的手册</div>';return;}
+      let html=list.map(d=>{
+        let catColors={PLC:'primary',变频器:'accent',伺服:'success',HMI:'warn',传感器:'primary',气动:'accent'};
+        let catColor=catColors[d.category]||'primary';
+        return `
         <div class="card">
-          <div class="card-title">${d.brand} <span class="badge badge-${d.category==='PLC'?'primary':d.category==='变频器'?'accent':'success'}">${d.category}</span></div>
-          ${d.items.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-            <div><div style="font-weight:500;">${i.name}</div><div style="font-size:12px;color:var(--text-dim);">${i.desc}</div></div>
-            <a href="${i.url}" target="_blank" class="btn btn-outline btn-sm">📄 查看手册</a>
+          <div class="card-title">${d.brand} <span class="badge badge-${catColor}">${d.category}</span> <span style="font-size:12px;color:var(--text-muted);font-weight:normal;">${d.items.length}份</span></div>
+          ${d.items.map(i=>`<div class="doc-item">
+            <div class="doc-info">
+              <div class="doc-name">${i.name}</div>
+              <div class="doc-desc">${i.desc}</div>
+              ${(i.tags&&i.tags.length)?`<div class="doc-tags">${i.tags.map(t=>`<span class="doc-tag">${t}</span>`).join('')}</div>`:''}
+            </div>
+            <a href="${i.url}" target="_blank" class="btn btn-outline btn-sm">📄 查看</a>
           </div>`).join('')}
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
       document.getElementById('docList').innerHTML=html;
     }
-    renderBrands();
-    renderDocs(docs);
+    renderFilters();
+    filterDocs();
   </script>
 </body>
 </html>
