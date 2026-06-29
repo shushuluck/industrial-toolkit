@@ -57,6 +57,7 @@
   </div>
   <div class="footer">工控工具箱 — 进制/编码转换器</div>
   <script src="../js/common.js"></script>
+  <script src="../js/visit-counter.js"></script>
   <script>
     let endian='big';
     function setEndian(e,btn){endian=e;btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');convert();}

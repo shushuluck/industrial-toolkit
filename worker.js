@@ -62,6 +62,63 @@ export default {
         });
       }
 
+      // POST /visit - 记录访问次数
+      if (request.method === 'POST' && path === '/visit') {
+        const body = await request.json();
+        const toolId = body.tool_id;
+        if (!toolId) {
+          return new Response(JSON.stringify({ error: 'Missing tool_id' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        // 增加工具访问计数
+        const toolKey = `stats:${toolId}`;
+        const toolCountRaw = await env.DATA_KV.get(toolKey);
+        const toolCount = (toolCountRaw ? parseInt(toolCountRaw) : 0) + 1;
+        await env.DATA_KV.put(toolKey, toolCount.toString());
+
+        // 增加全站总访问计数
+        const totalKey = 'stats:total';
+        const totalCountRaw = await env.DATA_KV.get(totalKey);
+        const totalCount = (totalCountRaw ? parseInt(totalCountRaw) : 0) + 1;
+        await env.DATA_KV.put(totalKey, totalCount.toString());
+
+        return new Response(JSON.stringify({ success: true, tool_count: toolCount, total_count: totalCount }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // GET /stats - 获取统计数据
+      if (request.method === 'GET' && path === '/stats') {
+        const toolId = url.searchParams.get('tool_id');
+        const totalKey = 'stats:total';
+        const totalCountRaw = await env.DATA_KV.get(totalKey);
+        const totalCount = totalCountRaw ? parseInt(totalCountRaw) : 0;
+
+        if (toolId) {
+          const toolKey = `stats:${toolId}`;
+          const toolCountRaw = await env.DATA_KV.get(toolKey);
+          const toolCount = toolCountRaw ? parseInt(toolCountRaw) : 0;
+          return new Response(JSON.stringify({ success: true, tool_count: toolCount, total_count: totalCount }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+
+        // 如果没有 tool_id，返回所有工具的统计
+        const stats = { total: totalCount, tools: {} };
+        const list = await env.DATA_KV.list({ prefix: 'stats:' });
+        for (const key of list.keys) {
+          if (key.name !== 'stats:total') {
+            const toolName = key.name.replace('stats:', '');
+            const count = await env.DATA_KV.get(key.name);
+            stats.tools[toolName] = count ? parseInt(count) : 0;
+          }
+        }
+
+        return new Response(JSON.stringify({ success: true, stats }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       return new Response(JSON.stringify({ error: 'Not Found', path }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     } catch (e) {
       return new Response(JSON.stringify({ error: e.message }), {

@@ -92,6 +92,7 @@
   </div>
   <div class="footer">工控工具箱 — 串口通信模拟器</div>
   <script src="../js/common.js"></script>
+  <script src="../js/visit-counter.js"></script>
   <script>
     const funcDescs={'01':'读取从站线圈状态 (DO)','02':'读取从站离散输入状态 (DI)','03':'读取从站保持寄存器数据','04':'读取从站输入寄存器数据','05':'强制单个线圈 ON/OFF','06':'预置单个保持寄存器值','0F':'强制多个线圈 ON/OFF','10':'预置多个保持寄存器值'};
     function updateFuncDesc(){document.getElementById('funcDesc').textContent=funcDescs[document.getElementById('funcCode').value]||'';}
