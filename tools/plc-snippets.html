@@ -25,8 +25,7 @@
     const snippets=[
       {title:'启保停电路 (ST)',tags:['基础','ST','启停'],lang:'iecst',code:`// 启保停电路 - 自锁回路
 // I0.0=启动按钮, I0.1=停止按钮, Q0.0=输出
-Q0.0 := (I0.0 OR Q0.0) AND NOT I0.1;`,ladder:
-<line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
+Q0.0 := (I0.0 OR Q0.0) AND NOT I0.1;`,ladder:`<line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
 <line x1="80" y1="35" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="35" x2="120" y2="65" stroke="#00d4ff" stroke-width="2"/>
 <line x1="120" y1="50" x2="220" y2="50" stroke="#00d4ff" stroke-width="2"/>
 <text x="100" y="28" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">I0.0</text>
