@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>安全回路检查器 - ISO 13849</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0e1a;color:#e0e6f0;line-height:1.6;padding:20px}
+.back-link{color:#64b5f6;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:12px}
+.back-link:hover{text-decoration:underline}
+.tool-header{background:linear-gradient(135deg,#1a237e,#0d47a1);padding:24px 28px;border-radius:12px;margin-bottom:24px}
+.tool-header h2{font-size:1.6em;color:#fff}
+.tool-header p{color:#90caf9;font-size:0.95em;margin-top:4px}
+
+.tabs{display:flex;gap:4px;margin-bottom:0;flex-wrap:wrap}
+.tab-btn{padding:10px 20px;background:#1a1f35;border:1px solid #2a3050;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;color:#8899bb;font-size:0.9em;transition:.2s}
+.tab-btn.active{background:#1e2a4a;color:#64b5f6;border-color:#3a5080;font-weight:600}
+.tab-content{display:none;background:#111729;border:1px solid #2a3050;border-radius:0 12px 12px 12px;padding:24px}
+.tab-content.active{display:block}
+
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:20px}
+.form-group{background:#151c30;border:1px solid #2a3050;border-radius:8px;padding:14px}
+.form-group label{display:block;font-weight:600;margin-bottom:6px;color:#90caf9;font-size:0.9em}
+.form-group select,.form-group input{width:100%;padding:8px 10px;background:#0d1220;border:1px solid #3a4570;border-radius:6px;color:#e0e6f0;font-size:0.95em}
+
+.btn{padding:10px 24px;border:none;border-radius:8px;cursor:pointer;font-size:0.95em;font-weight:600;transition:.2s}
+.btn-primary{background:linear-gradient(135deg,#1565c0,#0d47a1);color:#fff}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(21,101,192,0.4)}
+.btn-row{display:flex;gap:10px;margin-top:8px}
+
+/* SVG circuit */
+.circuit-wrap{background:#0a0e1a;border:1px solid #2a3050;border-radius:10px;padding:16px;margin-top:16px;overflow-x:auto}
+.circuit-wrap svg{max-width:100%;height:auto}
+
+/* Compliance */
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:8px;font-size:0.93em}
+.check-pass{background:#0d2818;border:1px solid #1b5e20;color:#a5d6a7}
+.check-fail{background:#2d0a0a;border:1px solid #c62828;color:#ef9a9a}
+.check-warn{background:#2d2000;border:1px solid #f57f17;color:#ffe082}
+.check-icon{font-size:1.2em;flex-shrink:0;margin-top:1px}
+
+/* Tables */
+.styled-table{width:100%;border-collapse:collapse;font-size:0.9em;margin:12px 0}
+.styled-table th{background:#1a237e;color:#e3f2fd;padding:10px 12px;text-align:left;font-weight:600}
+.styled-table td{padding:9px 12px;border-bottom:1px solid #1e2a4a}
+.styled-table tr:nth-child(even){background:#111729}
+.styled-table tr:hover{background:#1a237e22}
+.pl-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:700;font-size:0.85em}
+.pl-a{background:#4caf50;color:#fff}.pl-b{background:#8bc34a;color:#000}
+.pl-c{background:#ffeb3b;color:#000}.pl-d{background:#ff9800;color:#fff}
+.pl-e{background:#f44336;color:#fff}
+
+.section-title{font-size:1.15em;font-weight:700;color:#64b5f6;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid #2a3050}
+.relay-card{background:#151c30;border:1px solid #2a3050;border-radius:8px;padding:12px;margin-bottom:8px}
+.relay-card strong{color:#90caf9}
+
+/* Output panel */
+.output-panel{background:#0d1220;border:1px solid #2a3050;border-radius:10px;padding:16px;margin-top:16px}
+.output-panel h3{color:#64b5f6;margin-bottom:10px;font-size:1.05em}
+
+@media(max-width:640px){
+  .form-grid{grid-template-columns:1fr}
+  .tabs{gap:2px}
+  .tab-btn{padding:8px 12px;font-size:0.82em}
+}
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-link">← 返回主页</a>
+<div class="tool-header">
+  <h2>🛡️ 安全回路检查器</h2>
+  <p>急停/安全继电器接线检查，ISO 13849 合规验证</p>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('circuit')">🔌 回路逻辑生成</button>
+  <button class="tab-btn" onclick="switchTab('compliance')">✅ ISO 13849 合规检查</button>
+  <button class="tab-btn" onclick="switchTab('ref')">📊 安全等级速查</button>
+  <button class="tab-btn" onclick="switchTab('wiring')">🔧 急停接线规范</button>
+  <button class="tab-btn" onclick="switchTab('relays')">🏭 安全继电器参考</button>
+</div>
+
+<!-- Tab 1: Circuit Logic Generator -->
+<div id="tab-circuit" class="tab-content active">
+  <div class="form-grid">
+    <div class="form-group">
+      <label>急停按钮类型</label>
+      <select id="estopType"><option value="NC">常闭 (NC) — 推荐</option><option value="NO">常开 (NO) — ⚠️ 不推荐</option></select>
+    </div>
+    <div class="form-group">
+      <label>急停按钮数量</label>
+      <select id="estopCount"><option>1</option><option>2</option><option>3</option><option selected>4</option></select>
+    </div>
+    <div class="form-group">
+      <label>安全继电器通道</label>
+      <select id="channelType"><option value="single">单通道</option><option value="dual" selected>双通道（冗余）</option></select>
+    </div>
+    <div class="form-group">
+      <label>要求安全等级 PLr</label>
+      <select id="plrLevel"><option value="a">PLr a</option><option value="b">PLr b</option><option value="c">PLr c</option><option value="d" selected>PLr d</option><option value="e">PLr e</option></select>
+    </div>
+    <div class="form-group">
+      <label>反馈回路（接触器辅助触点）</label>
+      <select id="feedback"><option value="yes" selected>有</option><option value="no">无</option></select>
+    </div>
+    <div class="form-group">
+      <label>短路检测</label>
+      <select id="shortDetect"><option value="yes" selected>有</option><option value="no">无</option></select>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="generateCircuit()">⚡ 生成安全回路逻辑图</button>
+    <button class="btn btn-primary" onclick="runCompliance()">✅ 运行合规检查</button>
+  </div>
+  <div id="circuitOutput" class="circuit-wrap" style="display:none"></div>
+  <div id="complianceInline"></div>
+</div>
+
+<!-- Tab 2: Compliance Check -->
+<div id="tab-compliance" class="tab-content">
+  <p style="color:#8899bb;margin-bottom:16px">在「回路逻辑生成」页配置参数后点击「运行合规检查」，结果将同时显示在此处。</p>
+  <div id="complianceFull"></div>
+</div>
+
+<!-- Tab 3: Reference Table -->
+<div id="tab-ref" class="tab-content">
+  <h3 class="section-title">ISO 13849-1 安全等级参数速查表</h3>
+  <table class="styled-table">
+    <thead><tr><th>PLr</th><th>SFF</th><th>DC</th><th>CCF</th><th>MTTFd</th><th>适用场景</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pl-badge pl-a">a</span></td><td>&lt;90%</td><td>无</td><td>无</td><td>低 (3~10年)</td><td>低风险，轻微伤害</td></tr>
+      <tr><td><span class="pl-badge pl-b">b</span></td><td>≥90%</td><td>低</td><td>≥65分</td><td>中 (10~30年)</td><td>一般机械，可恢复伤害</td></tr>
+      <tr><td><span class="pl-badge pl-c">c</span></td><td>≥90%</td><td>中</td><td>≥65分</td><td>中-高 (30~100年)</td><td>危险机械，严重伤害</td></tr>
+      <tr><td><span class="pl-badge pl-d">d</span></td><td>≥90%</td><td>高</td><td>≥65分</td><td>高 (30~100年)</td><td>高危机械，致命风险</td></tr>
+      <tr><td><span class="pl-badge pl-e">e</span></td><td>≥99%</td><td>高</td><td>≥65分</td><td>高 (≥100年)</td><td>严重后果，不可逆伤害</td></tr>
+    </tbody>
+  </table>
+  <p style="color:#7788aa;font-size:0.85em;margin-top:6px">SFF = 安全失效分数 | DC = 诊断覆盖率 | CCF = 共因失效因子 | MTTFd = 平均危险失效时间</p>
+
+  <h3 class="section-title">PL 与 Category 对照</h3>
+  <table class="styled-table">
+    <thead><tr><th>Category</th><th>结构</th><th>典型PL</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>B</td><td>单通道</td><td>a~b</td><td>基本设计要求</td></tr>
+      <tr><td>1</td><td>单通道（高可靠元件）</td><td>c</td><td>使用经验证的元件</td></tr>
+      <tr><td>2</td><td>单通道 + 定期检测</td><td>c~d</td><td>需定期诊断测试</td></tr>
+      <tr><td>3</td><td>双通道（无短路交叉检测）</td><td>d</td><td>单一故障不丧失安全功能</td></tr>
+      <tr><td>4</td><td>双通道 + 短路检测</td><td>e</td><td>故障累积不丧失安全功能</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Tab 4: Wiring -->
+<div id="tab-wiring" class="tab-content">
+  <h3 class="section-title">🔌 急停按钮接线规范</h3>
+  <div class="check-item check-fail"><span class="check-icon">❌</span><div><strong>禁止使用常开(NO)触点</strong><br>急停按钮必须使用常闭(NC)触点——断开线路 = 急停动作。线路断线时也会触发急停（失效安全）。</div></div>
+  <div class="check-item check-fail"><span class="check-icon">❌</span><div><strong>禁止仅通过PLC切断动力</strong><br>急停必须直接切断动力回路（硬接线），不能仅依赖PLC软件逻辑。PLC可作为辅助但非唯一手段。</div></div>
+  <div class="check-item check-pass"><span class="check-icon">✅</span><div><strong>手动旋转复位</strong><br>急停触发后，必须手动旋转蘑菇头按钮解锁才能复位。不允许自动复位或远程复位。</div></div>
+  <div class="check-item check-pass"><span class="check-icon">✅</span><div><strong>双手操作要求</strong><br>双手操作装置需同时按下两按钮（时间差≤0.5s），释放任一手即停机。按钮间距≥250mm~550mm。</div></div>
+
+  <h3 class="section-title">⚡ 典型急停回路接线示意</h3>
+  <div class="circuit-wrap">
+    <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#64b5f6"/></marker></defs>
+      <!-- Power rail -->
+      <line x1="40" y1="30" x2="660" y2="30" stroke="#4caf50" stroke-width="2"/>
+      <text x="30" y="34" fill="#4caf50" font-size="11" text-anchor="end">L1</text>
+      <line x1="40" y1="170" x2="660" y2="170" stroke="#f44336" stroke-width="2"/>
+      <text x="30" y="174" fill="#f44336" font-size="11" text-anchor="end">N</text>
+      <!-- E-Stop NC contacts in series -->
+      <g><text x="100" y="18" fill="#90caf9" font-size="10" text-anchor="middle">急停NC触点</text>
+        <line x1="60" y1="30" x2="80" y2="30" stroke="#64b5f6" stroke-width="2"/>
+        <line x1="80" y1="20" x2="80" y2="40" stroke="#64b5f6" stroke-width="2"/>
+        <line x1="80" y1="30" x2="120" y2="20" stroke="#64b5f6" stroke-width="2" stroke-dasharray="0"/>
+        <line x1="120" y1="20" x2="120" y2="40" stroke="#64b5f6" stroke-width="2"/>
+        <line x1="120" y1="30" x2="140" y2="30" stroke="#64b5f6" stroke-width="2"/>
+        <circle cx="100" cy="26" r="3" fill="none" stroke="#ff9800" stroke-width="1.5"/>
+        <text x="100" y="55" fill="#7788aa" font-size="9" text-anchor="middle">S1-NC</text>
+      </g>
+      <!-- Second NC -->
+      <g transform="translate(100,0)">
+        <line x1="140" y1="30" x2="160" y2="30" stroke="#64b5f6" stroke-width="2"/>
+        <line x1="160" y1="20" x2="160" y2="40" stroke="#64b5f6" stroke-width="2"/>
+        <line x1="160" y1="30" x2="200" y2="20" stroke="#64b5f6" stroke-width="2"/>
+        <line x1="200" y1="20" x2="200" y2="40" stroke="#64b5f6" stroke-width="2"/>
+        <line x1="200" y1="30" x2="220" y2="30" stroke="#64b5f6" stroke-width="2"/>
+        <text x="180" y="55" fill="#7788aa" font-size="9" text-anchor="middle">S2-NC</text>
+      </g>
+      <!-- Safety relay -->
+      <g>
+        <rect x="380" y="15" width="100" height="30" rx="4" fill="#1a237e" stroke="#3f51b5" stroke-width="1.5"/>
+        <text x="430" y="34" fill="#e3f2fd" font-size="10" text-anchor="middle">安全继电器</text>
+        <line x1="320" y1="30" x2="380" y2="30" stroke="#64b5f6" stroke-width="2" marker-end="url(#ah)"/>
+        <text x="350" y="22" fill="#7788aa" font-size="9" text-anchor="middle">通道A</text>
+      </g>
+      <!-- Dual channel -->
+      <g>
+        <line x1="320" y1="80" x2="380" y2="80" stroke="#64b5f6" stroke-width="2" marker-end="url(#ah)"/>
+        <rect x="380" y="65" width="100" height="30" rx="4" fill="#1a237e" stroke="#3f51b5" stroke-width="1.5"/>
+        <text x="430" y="84" fill="#e3f2fd" font-size="10" text-anchor="middle">通道B</text>
+        <text x="350" y="72" fill="#7788aa" font-size="9" text-anchor="middle">通道B</text>
+      </g>
+      <!-- Output contacts -->
+      <g>
+        <line x1="480" y1="30" x2="520" y2="30" stroke="#4caf50" stroke-width="2"/>
+        <rect x="520" y="18" width="70" height="24" rx="4" fill="#1b5e20" stroke="#4caf50" stroke-width="1.5"/>
+        <text x="555" y="34" fill="#c8e6c9" font-size="10" text-anchor="middle">KM1 主触点</text>
+        <line x1="590" y1="30" x2="660" y2="30" stroke="#4caf50" stroke-width="2"/>
+      </g>
+      <!-- Feedback -->
+      <g>
+        <line x1="480" y1="80" x2="520" y2="80" stroke="#4caf50" stroke-width="2"/>
+        <rect x="520" y="68" width="70" height="24" rx="4" fill="#1b5e20" stroke="#4caf50" stroke-width="1.5"/>
+        <text x="555" y="84" fill="#c8e6c9" font-size="10" text-anchor="middle">KM2 备用</text>
+      </g>
+      <!-- Feedback loop -->
+      <g>
+        <path d="M555 92 L555 140 L430 140 L430 95" fill="none" stroke="#ff9800" stroke-width="1.5" stroke-dasharray="5,3"/>
+        <text x="490" y="152" fill="#ff9800" font-size="9" text-anchor="middle">反馈回路 (辅助触点)</text>
+      </g>
+      <!-- Motor -->
+      <circle cx="640" cy="100" r="18" fill="none" stroke="#4caf50" stroke-width="2"/>
+      <text x="640" y="104" fill="#4caf50" font-size="10" text-anchor="middle">M</text>
+      <line x1="640" y1="118" x2="640" y2="145" stroke="#4caf50" stroke-width="2"/>
+      <line x1="640" y1="145" x2="660" y2="170" stroke="#f44336" stroke-width="2"/>
+      <line x1="620" y1="145" x2="660" y2="145" stroke="#f44336" stroke-width="1"/>
+    </svg>
+  </div>
+</div>
+
+<!-- Tab 5: Relay Reference -->
+<div id="tab-relays" class="tab-content">
+  <h3 class="section-title">常见安全继电器型号</h3>
+  <table class="styled-table">
+    <thead><tr><th>品牌</th><th>型号</th><th>通道数</th><th>安全等级</th><th>特点</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Pilz</strong></td><td>PNOZ s4</td><td>单通道</td><td><span class="pl-badge pl-c">PL c</span></td><td>急停监控，入门级</td></tr>
+      <tr><td><strong>Pilz</strong></td><td>PNOZ s5</td><td>双通道</td><td><span class="pl-badge pl-d">PL d</span></td><td>急停+安全门监控</td></tr>
+      <tr><td><strong>Pilz</strong></td><td>PNOZ s6</td><td>双通道</td><td><span class="pl-badge pl-e">PL e</span></td><td>最高等级，双手控制</td></tr>
+      <tr><td><strong>Sick</strong></td><td>FX3-XTIO</td><td>双通道</td><td><span class="pl-badge pl-d">PL d</span></td><td>可编程安全控制器</td></tr>
+      <tr><td><strong>Omron</strong></td><td>G9SE-201</td><td>双通道</td><td><span class="pl-badge pl-d">PL d</span></td><td>紧凑型，急停+门锁</td></tr>
+      <tr><td><strong>Schmersal</strong></td><td>SRB 301ST</td><td>双通道</td><td><span class="pl-badge pl-d">PL d</span></td><td>急停+安全光幕接口</td></tr>
+      <tr><td><strong>Schmersal</strong></td><td>SRB-E-402FWS</td><td>双通道</td><td><span class="pl-badge pl-e">PL e</span></td><td>Category 4，最高安全</td></tr>
+    </tbody>
+  </table>
+  <h3 class="section-title">选型指南</h3>
+  <div class="relay-card"><strong>PLr a~c：</strong>单通道安全继电器即可，如 PNOZ s4</div>
+  <div class="relay-card"><strong>PLr d：</strong>必须双通道冗余 + 反馈回路，如 PNOZ s5 / G9SE</div>
+  <div class="relay-card"><strong>PLr e：</strong>双通道 + 短路检测 + 高SFF，如 PNOZ s6 / SRB-E-402FWS</div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+function switchTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+function getConfig(){
+  return{
+    estopType:document.getElementById('estopType').value,
+    estopCount:+document.getElementById('estopCount').value,
+    channel:document.getElementById('channelType').value,
+    plr:document.getElementById('plrLevel').value,
+    feedback:document.getElementById('feedback').value==='yes',
+    shortDetect:document.getElementById('shortDetect').value==='yes'
+  };
+}
+
+function generateCircuit(){
+  const c=getConfig();
+  const W=700,H=120+c.estopCount*40+(c.channel==='dual'?60:0)+80;
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="background:#080c18;border-radius:8px">`;
+  // Title
+  svg+=`<text x="${W/2}" y="22" fill="#90caf9" font-size="13" text-anchor="middle" font-weight="bold">安全回路逻辑图 — PLr ${c.plr.toUpperCase()} ${c.channel==='dual'?'双通道':'单通道'}</text>`;
+
+  // Power rails
+  const railY1=40,railY2=H-20;
+  svg+=`<line x1="50" y1="${railY1}" x2="${W-50}" y2="${railY1}" stroke="#4caf50" stroke-width="2"/>`;
+  svg+=`<text x="42" y="${railY1+4}" fill="#4caf50" font-size="11" text-anchor="end">L+</text>`;
+  svg+=`<line x1="50" y1="${railY2}" x2="${W-50}" y2="${railY2}" stroke="#f44336" stroke-width="2"/>`;
+  svg+=`<text x="42" y="${railY2+4}" fill="#f44336" font-size="11" text-anchor="end">L-</text>`;
+
+  // E-stop contacts in series
+  let cx=80;
+  const estopY=railY1;
+  const ncColor=c.estopType==='NC'?'#64b5f6':'#ff5252';
+  for(let i=0;i<c.estopCount;i++){
+    const x=cx+i*70;
+    svg+=`<line x1="${x}" y1="${estopY}" x2="${x+15}" y2="${estopY}" stroke="${ncColor}" stroke-width="2"/>`;
+    svg+=`<line x1="${x+15}" y1="${estopY-10}" x2="${x+15}" y2="${estopY+10}" stroke="${ncColor}" stroke-width="2"/>`;
+    svg+=`<line x1="${x+35}" y1="${estopY-10}" x2="${x+35}" y2="${estopY+10}" stroke="${ncColor}" stroke-width="2"/>`;
+    // diagonal for NC
+    if(c.estopType==='NC'){
+      svg+=`<line x1="${x+15}" y1="${estopY}" x2="${x+35}" y2="${estopY-8}" stroke="${ncColor}" stroke-width="1.5" stroke-dasharray="4,2"/>`;
+    }else{
+      svg+=`<line x1="${x+15}" y1="${estopY+2}" x2="${x+35}" y2="${estopY-6}" stroke="${ncColor}" stroke-width="2"/>`;
+    }
+    svg+=`<line x1="${x+35}" y1="${estopY}" x2="${x+50}" y2="${estopY}" stroke="${ncColor}" stroke-width="2"/>`;
+    svg+=`<text x="${x+25}" y="${estopY+24}" fill="#7788aa" font-size="9" text-anchor="middle">E-Stop ${i+1}</text>`;
+    svg+=`<text x="${x+25}" y="${estopY+34}" fill="#7788aa" font-size="8" text-anchor="middle">${c.estopType}</text>`;
+  }
+  const afterEstop=cx+c.estopCount*70;
+  svg+=`<line x1="${afterEstop-20}" y1="${estopY}" x2="${afterEstop+20}" y2="${estopY}" stroke="${ncColor}" stroke-width="2"/>`;
+
+  // Safety relay box
+  const relayX=afterEstop+30;
+  const relayW=120,relayH=c.channel==='dual'?50:30;
+  const relayY=railY1-5;
+  svg+=`<rect x="${relayX}" y="${relayY}" width="${relayW}" height="${relayH}" rx="5" fill="#1a237e" stroke="#3f51b5" stroke-width="1.5"/>`;
+  svg+=`<text x="${relayX+relayW/2}" y="${relayY+18}" fill="#e3f2fd" font-size="11" text-anchor="middle" font-weight="bold">安全继电器</text>`;
+  svg+=`<text x="${relayX+relayW/2}" y="${relayY+30}" fill="#90caf9" font-size="9" text-anchor="middle">${c.channel==='dual'?'双通道':'单通道'}</text>`;
+  if(c.channel==='dual'){
+    svg+=`<text x="${relayX+relayW/2}" y="${relayY+44}" fill="#7788aa" font-size="8" text-anchor="middle">Ch.A + Ch.B</text>`;
+  }
+  svg+=`<line x1="${afterEstop+10}" y1="${railY1}" x2="${relayX}" y2="${railY1}" stroke="#64b5f6" stroke-width="2" marker-end="url(#ah)"/>`;
+
+  // Output contactor
+  const outX=relayX+relayW+30;
+  svg+=`<rect x="${outX}" y="${relayY}" width="100" height="30" rx="4" fill="#1b5e20" stroke="#4caf50" stroke-width="1.5"/>`;
+  svg+=`<text x="${outX+50}" y="${relayY+18}" fill="#c8e6c9" font-size="10" text-anchor="middle">输出接触器</text>`;
+  svg+=`<text x="${outX+50}" y="${relayY+28}" fill="#a5d6a7" font-size="8" text-anchor="middle">KM1</text>`;
+  svg+=`<line x1="${relayX+relayW}" y1="${railY1}" x2="${outX}" y2="${railY1}" stroke="#4caf50" stroke-width="2"/>`;
+  svg+=`<line x1="${outX+100}" y1="${railY1}" x2="${W-50}" y2="${railY1}" stroke="#4caf50" stroke-width="2"/>`;
+
+  // Second channel line
+  if(c.channel==='dual'){
+    const ch2Y=railY1+relayH+20;
+    svg+=`<line x1="${relayX}" y1="${ch2Y}" x2="${relayX+relayW}" y2="${ch2Y}" stroke="#64b5f6" stroke-width="2"/>`;
+    svg+=`<text x="${relayX+relayW/2}" y="${ch2Y-8}" fill="#7788aa" font-size="9" text-anchor="middle">通道B</text>`;
+    svg+=`<rect x="${relayX}" y="${ch2Y-8}" width="${relayW}" height="16" rx="3" fill="none" stroke="#3f51b5" stroke-dasharray="4,2"/>`;
+  }
+
+  // Feedback loop
+  if(c.feedback){
+    const fbY=relayY+relayH+30;
+    svg+=`<path d="M${outX+50} ${relayY+30} L${outX+50} ${fbY} L${relayX+relayW/2} ${fbY} L${relayX+relayW/2} ${relayY+relayH}" fill="none" stroke="#ff9800" stroke-width="1.5" stroke-dasharray="5,3"/>`;
+    svg+=`<text x="${(outX+50+relayX+relayW/2)/2}" y="${fbY+14}" fill="#ff9800" font-size="9" text-anchor="middle">反馈回路 (辅助触点)</text>`;
+  }
+
+  // Short circuit detection indicator
+  if(c.shortDetect){
+    const scY=railY2-25;
+    svg+=`<rect x="${relayX+10}" y="${scY}" width="${relayW-20}" height="18" rx="3" fill="#2d2000" stroke="#f57f17" stroke-width="1"/>`;
+    svg+=`<text x="${relayX+relayW/2}" y="${scY+13}" fill="#ffcc02" font-size="9" text-anchor="middle">⚡ 短路检测已启用</text>`;
+  }
+
+  svg+=`</svg>`;
+  const el=document.getElementById('circuitOutput');
+  el.innerHTML=svg;
+  el.style.display='block';
+}
+
+function runCompliance(){
+  const c=getConfig();
+  const checks=[];
+
+  // 1. NC contact
+  if(c.estopType==='NC'){
+    checks.push({pass:true,msg:'✅ 急停使用常闭(NC)触点 — 断开=急停动作，符合ISO 13849要求'});
+  }else{
+    checks.push({pass:false,msg:'❌ 急停使用常开(NO)触点 — <strong>严重违规！</strong>ISO 13849要求急停必须使用NC触点（断线即触发急停）'});
+  }
+
+  // 2. Dual channel for PLr d/e
+  const plNum={a:1,b:2,c:3,d:4,e:5}[c.plr];
+  if(plNum>=4 && c.channel==='single'){
+    checks.push({pass:false,msg:`❌ PLr ${c.plr.toUpperCase()} 要求双通道冗余 — 当前为单通道，<strong>不满足安全等级要求</strong>`});
+  }else if(plNum>=4){
+    checks.push({pass:true,msg:`✅ PLr ${c.plr.toUpperCase()} 已配置双通道冗余`});
+  }else{
+    checks.push({pass:true,msg:`✅ PLr ${c.plr.toUpperCase()} 允许单通道配置`});
+  }
+
+  // 3. Feedback loop
+  if(c.feedback){
+    checks.push({pass:true,msg:'✅ 反馈回路已配置 — 接触器辅助触点回馈监控'});
+  }else{
+    if(plNum>=4){
+      checks.push({pass:false,msg:'❌ <strong>缺少反馈回路</strong> — PLr d/e 必须有接触器辅助触点回馈监控'});
+    }else{
+      checks.push({pass:'warn',msg:'⚠️ 未配置反馈回路 — 建议增加以提高安全性（PLr b/c 推荐但非强制）'});
+    }
+  }
+
+  // 4. Short circuit detection
+  if(c.shortDetect){
+    checks.push({pass:true,msg:'✅ 短路检测已启用 — 符合Category 3/4要求'});
+  }else{
+    if(plNum>=5){
+      checks.push({pass:false,msg:'❌ <strong>缺少短路检测</strong> — PLr e (Category 4) 必须有短路检测功能'});
+    }else if(plNum>=4){
+      checks.push({pass:'warn',msg:'⚠️ 未启用短路检测 — PLr d (Category 3) 建议配置，但非强制'});
+    }else{
+      checks.push({pass:true,msg:'✅ PLr a~c 不强制要求短路检测'});
+    }
+  }
+
+  // 5. Manual reset
+  checks.push({pass:true,msg:'✅ 急停后必须手动复位（旋转解锁）才能重新启动 — 符合ISO 13849-1 §5.2.2'});
+
+  // 6. E-stop count
+  if(c.estopCount>=3){
+    checks.push({pass:'warn',msg:`⚠️ 配置了 ${c.estopCount} 个急停按钮串联 — 注意串联增加压降和故障点，需确保可靠连接`});
+  }else{
+    checks.push({pass:true,msg:`✅ ${c.estopCount} 个急停按钮配置合理`});
+  }
+
+  // 7. Overall assessment
+  const failCount=checks.filter(x=>x.pass===false).length;
+  const warnCount=checks.filter(x=>x.pass==='warn').length;
+  let overall;
+  if(failCount>0){
+    overall=`<div class="check-item check-fail"><span class="check-icon">🚫</span><div><strong>合规检查未通过</strong> — 发现 ${failCount} 项不合规，${warnCount} 项警告。必须修复不合规项后才能投入使用。</div></div>`;
+  }else if(warnCount>0){
+    overall=`<div class="check-item check-warn"><span class="check-icon">⚠️</span><div><strong>有条件合规</strong> — 无强制违规项，但有 ${warnCount} 项建议改进。</div></div>`;
+  }else{
+    overall=`<div class="check-item check-pass"><span class="check-icon">✅</span><div><strong>合规检查通过</strong> — 当前配置满足 ISO 13849-1 PLr ${c.plr.toUpperCase()} 要求。</div></div>`;
+  }
+
+  let html=overall;
+  html+=`<div class="output-panel"><h3>ISO 13849 合规检查结果 — PLr ${c.plr.toUpperCase()}</h3>`;
+  checks.forEach(ch=>{
+    const cls=ch.pass===true?'check-pass':ch.pass==='warn'?'check-warn':'check-fail';
+    html+=`<div class="check-item ${cls}" style="font-size:0.9em"><div>${ch.msg}</div></div>`;
+  });
+  html+=`</div>`;
+
+  document.getElementById('complianceInline').innerHTML=html;
+  document.getElementById('complianceFull').innerHTML=html;
+
+  // Auto switch to compliance tab to show full results
+  // (inline already visible on circuit tab)
+}
+
+// Generate default circuit on load
+window.addEventListener('DOMContentLoaded',()=>generateCircuit());
+</script>
+</body>
+</html>

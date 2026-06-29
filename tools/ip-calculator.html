@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工业网络IP计算器 - 工业工具集</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+  .back-link{display:inline-block;margin:16px 0 8px;color:#2196F3;text-decoration:none;font-size:14px}
+  .back-link:hover{text-decoration:underline}
+  .tool-header{margin-bottom:24px}
+  .tool-header h2{margin:0 0 6px;font-size:1.6em}
+  .tool-header p{margin:0;color:#888;font-size:14px}
+  .card{background:#1e1e2e;border:1px solid #333;border-radius:10px;padding:20px;margin-bottom:20px}
+  .card h3{margin:0 0 14px;font-size:1.1em;display:flex;align-items:center;gap:8px}
+  .input-row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:14px}
+  .input-group{display:flex;flex-direction:column;gap:4px}
+  .input-group label{font-size:12px;color:#aaa}
+  .input-group input,.input-group select{padding:8px 10px;border:1px solid #444;border-radius:6px;background:#111;color:#eee;font-size:14px;font-family:monospace}
+  .btn{padding:8px 18px;border:none;border-radius:6px;background:#2196F3;color:#fff;font-size:14px;cursor:pointer}
+  .btn:hover{background:#1976D2}
+  .btn.secondary{background:#455A64}
+  .btn.secondary:hover{background:#37474F}
+  .result-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px}
+  .result-item{background:#111;border:1px solid #333;border-radius:8px;padding:12px;text-align:center}
+  .result-item .label{font-size:12px;color:#aaa;margin-bottom:4px}
+  .result-item .value{font-size:16px;font-weight:bold;color:#4CAF50;font-family:monospace}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  th,td{border:1px solid #333;padding:8px 10px;text-align:left}
+  th{background:#2a2a3a;color:#ccc;font-size:12px}
+  td{font-family:monospace}
+  .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:bold}
+  .badge-plc{background:#1B5E20;color:#A5D6A7}
+  .badge-hmi{background:#0D47A1;color:#90CAF9}
+  .badge-vfd{background:#4A148C;color:#CE93D8}
+  .badge-servo{background:#BF360C;color:#FFAB91}
+  .badge-io{background:#E65100;color:#FFB74D}
+  .badge-net{background:#004D40;color:#80CBC4}
+  .subnet-result{margin-top:14px}
+  .subnet-result table{font-size:12px}
+  .status-ok{color:#4CAF50}
+  .status-warn{color:#FF9800}
+  .status-conflict{color:#F44336}
+  .preset-btn{padding:6px 12px;border:1px solid #555;border-radius:6px;background:#2a2a3a;color:#eee;font-size:12px;cursor:pointer}
+  .preset-btn:hover{background:#3a3a4a;border-color:#2196F3}
+  .tag-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .planning-table td{position:relative}
+  .color-bar{width:4px;height:100%;position:absolute;left:0;top:0;border-radius:0 0 0 4px}
+</style>
+</head>
+<body>
+
+<a href="../index.html" class="back-link">← 返回主页</a>
+<div class="tool-header">
+  <h2>🌐 工业网络IP计算器</h2>
+  <p>IP地址计算、子网划分、工控设备默认IP速查</p>
+</div>
+
+<!-- 1. IP地址计算器 -->
+<div class="card">
+  <h3>🔢 IP地址计算器</h3>
+  <div class="input-row">
+    <div class="input-group">
+      <label>IP地址</label>
+      <input type="text" id="calc-ip" placeholder="192.168.1.100" value="192.168.1.100">
+    </div>
+    <div class="input-group">
+      <label>子网掩码 / CIDR</label>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="calc-mask" placeholder="255.255.255.0 或 24" value="24" style="width:160px">
+        <button class="btn" onclick="calculateIP()">计算</button>
+      </div>
+    </div>
+  </div>
+  <div class="result-grid" id="calc-results">
+    <div class="result-item"><div class="label">网络地址</div><div class="value" id="r-network">-</div></div>
+    <div class="result-item"><div class="label">广播地址</div><div class="value" id="r-broadcast">-</div></div>
+    <div class="result-item"><div class="label">可用IP范围</div><div class="value" id="r-range">-</div></div>
+    <div class="result-item"><div class="label">可用主机数</div><div class="value" id="r-hosts">-</div></div>
+    <div class="result-item"><div class="label">子网掩码</div><div class="value" id="r-mask">-</div></div>
+    <div class="result-item"><div class="label">通配符掩码</div><div class="value" id="r-wildcard">-</div></div>
+  </div>
+</div>
+
+<!-- 2. 子网划分工具 -->
+<div class="card">
+  <h3>✂️ 子网划分工具</h3>
+  <div class="input-row">
+    <div class="input-group">
+      <label>源网段 (CIDR)</label>
+      <input type="text" id="subnet-src" placeholder="10.0.0.0/16" value="10.0.0.0/16">
+    </div>
+    <div class="input-group">
+      <label>需要子网数</label>
+      <input type="number" id="subnet-count" min="2" max="1024" value="8">
+    </div>
+    <button class="btn" onclick="splitSubnet()">划分</button>
+  </div>
+  <div id="subnet-result"></div>
+</div>
+
+<!-- 3. 工业网络规划表 -->
+<div class="card">
+  <h3>📋 工业网络规划表</h3>
+  <div class="tag-row">
+    <button class="preset-btn" onclick="loadPreset('small')">小型: 192.168.1.0/24</button>
+    <button class="preset-btn" onclick="loadPreset('medium')">中型: 10.0.0.0/16</button>
+  </div>
+  <div id="planning-table"></div>
+  <div style="margin-top:12px">
+    <button class="btn secondary" onclick="addPlanRow()">+ 添加设备分组</button>
+    <button class="btn" onclick="exportPlan()" style="margin-left:8px">📋 导出文本</button>
+  </div>
+</div>
+
+<!-- 4. IP冲突检测 -->
+<div class="card">
+  <h3>⚡ 网段冲突检测</h3>
+  <div class="input-row">
+    <div class="input-group">
+      <label>IP地址 1</label>
+      <input type="text" id="conflict-ip1" placeholder="192.168.1.10" value="192.168.1.10">
+    </div>
+    <div class="input-group">
+      <label>IP地址 2</label>
+      <input type="text" id="conflict-ip2" placeholder="192.168.2.10" value="192.168.2.10">
+    </div>
+    <div class="input-group">
+      <label>子网掩码</label>
+      <input type="text" id="conflict-mask" placeholder="24" value="24" style="width:100px">
+    </div>
+    <button class="btn" onclick="checkConflict()">检测</button>
+  </div>
+  <div id="conflict-result"></div>
+</div>
+
+<!-- 5. 常用工控设备默认IP速查表 -->
+<div class="card">
+  <h3>📡 工控设备默认IP/端口速查表</h3>
+  <input type="text" id="device-search" placeholder="🔍 搜索品牌/设备/协议..." oninput="filterDeviceTable()" style="width:100%;padding:8px 10px;border:1px solid #444;border-radius:6px;background:#111;color:#eee;font-size:14px;margin-bottom:10px">
+  <div style="overflow-x:auto">
+    <table id="device-table">
+      <thead>
+        <tr>
+          <th>品牌</th>
+          <th>设备型号</th>
+          <th>默认IP</th>
+          <th>默认端口</th>
+          <th>协议</th>
+          <th>备注</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+// ========== 工具函数 ==========
+function parseIP(s) {
+  s = s.trim();
+  const parts = s.split('.');
+  if (parts.length !== 4) return null;
+  const b = parts.map(Number);
+  if (b.some(v => isNaN(v) || v < 0 || v > 255)) return null;
+  return (b[0]<<24|b[1]<<16|b[2]<<8|b[3])>>>0;
+}
+
+function ipToStr(n) {
+  return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');
+}
+
+function parseCIDR(s) {
+  s = s.trim();
+  if (s.includes('/')) {
+    const [ip, cidr] = s.split('/');
+    const ipN = parseIP(ip);
+    const c = parseInt(cidr);
+    if (ipN===null||isNaN(c)||c<0||c>32) return null;
+    return {ip: ipN, cidr: c, mask: c===0?0:(0xFFFFFFFF<<(32-c))>>>0};
+  }
+  const ipN = parseIP(s);
+  if (ipN!==null) return {ip: ipN, cidr: 32, mask: 0xFFFFFFFF};
+  return null;
+}
+
+function parseMaskOrCIDR(s) {
+  s = s.trim();
+  const n = parseInt(s);
+  if (!isNaN(n) && n>=0 && n<=32) return {cidr:n, mask: n===0?0:(0xFFFFFFFF<<(32-n))>>>0};
+  const ipN = parseIP(s);
+  if (ipN!==null) {
+    let cidr = 0;
+    let v = ipN;
+    while(v & 0x80000000) { cidr++; v<<=1; }
+    if (((0xFFFFFFFF<<(32-cidr))>>>0) === ipN) return {cidr, mask: ipN};
+  }
+  return null;
+}
+
+// ========== 1. IP计算器 ==========
+function calculateIP() {
+  const ipN = parseIP(document.getElementById('calc-ip').value);
+  const m = parseMaskOrCIDR(document.getElementById('calc-mask').value);
+  if (!ipN||!m) { alert('请输入有效的IP和掩码'); return; }
+  const mask = m.mask;
+  const network = (ipN & mask)>>>0;
+  const broadcast = (network | ~mask)>>>0;
+  const hosts = broadcast - network - 1;
+  const wildcard = (~mask)>>>0;
+  document.getElementById('r-network').textContent = ipToStr(network);
+  document.getElementById('r-broadcast').textContent = ipToStr(broadcast);
+  document.getElementById('r-range').textContent = hosts>0 ? ipToStr(network+1)+' ~ '+ipToStr(broadcast-1) : '无';
+  document.getElementById('r-hosts').textContent = hosts>0 ? hosts.toLocaleString() : '0';
+  document.getElementById('r-mask').textContent = ipToStr(mask)+' /'+m.cidr;
+  document.getElementById('r-wildcard').textContent = ipToStr(wildcard);
+}
+
+// ========== 2. 子网划分 ==========
+function splitSubnet() {
+  const src = parseCIDR(document.getElementById('subnet-src').value);
+  const count = parseInt(document.getElementById('subnet-count').value);
+  if (!src) { alert('请输入有效的网段'); return; }
+  if (!count||count<2) { alert('子网数至少为2'); return; }
+  const bits = Math.ceil(Math.log2(count));
+  const newCidr = src.cidr + bits;
+  if (newCidr>30) { alert('子网数超出可用范围'); return; }
+  const newMask = (0xFFFFFFFF<<(32-newCidr))>>>0;
+  const blockSize = (newMask===0)?0x100000000:(~newMask+1)>>>0;
+  let html = '<div class="subnet-result"><table><thead><tr><th>子网</th><th>网络地址</th><th>可用IP范围</th><th>广播地址</th><th>主机数</th></tr></thead><tbody>';
+  const total = 1<<bits;
+  for (let i=0; i<total && i<count; i++) {
+    const net = (src.ip + i*blockSize)>>>0;
+    const bcast = (net + blockSize - 1)>>>0;
+    const h = blockSize - 2;
+    html += `<tr><td>${i+1}</td><td>${ipToStr(net)}/${newCidr}</td><td>${ipToStr(net+1)} ~ ${ipToStr(bcast-1)}</td><td>${ipToStr(bcast)}</td><td>${h}</td></tr>`;
+  }
+  html += '</tbody></table></div>';
+  document.getElementById('subnet-result').innerHTML = html;
+}
+
+// ========== 3. 网络规划 ==========
+let planData = [];
+const DEVICE_TYPES = {
+  plc: {name:'PLC/控制器', css:'badge-plc', color:'#1B5E20'},
+  hmi: {name:'HMI/触摸屏', css:'badge-hmi', color:'#0D47A1'},
+  vfd: {name:'变频器', css:'badge-vfd', color:'#4A148C'},
+  servo: {name:'伺服驱动', css:'badge-servo', color:'#BF360C'},
+  io: {name:'IO模块', css:'badge-io', color:'#E65100'},
+  scada: {name:'SCADA/上位机', css:'badge-net', color:'#004D40'},
+  switch: {name:'交换机', css:'badge-net', color:'#004D40'},
+  other: {name:'其他设备', css:'', color:'#555'}
+};
+
+const PRESETS = {
+  small: {network:'192.168.1.0/24', groups:[
+    {type:'plc', name:'PLC控制器', start:10, end:19},
+    {type:'hmi', name:'HMI触摸屏', start:20, end:29},
+    {type:'vfd', name:'变频器', start:30, end:49},
+    {type:'servo', name:'伺服驱动器', start:50, end:69},
+    {type:'io', name:'远程IO模块', start:70, end:99},
+    {type:'scada', name:'SCADA/上位机', start:100, end:109},
+    {type:'switch', name:'工业交换机', start:1, end:4}
+  ]},
+  medium: {network:'10.0.0.0/16', groups:[
+    {type:'plc', name:'1号车间PLC', start:1, end:20},
+    {type:'hmi', name:'1号车间HMI', start:21, end:30},
+    {type:'plc', name:'2号车间PLC', start:101, end:120},
+    {type:'hmi', name:'2号车间HMI', start:121, end:130},
+    {type:'vfd', name:'变频器组', start:201, end:250},
+    {type:'servo', name:'伺服系统', start:251, end:300},
+    {type:'io', name:'远程IO站', start:301, end:400},
+    {type:'scada', name:'监控服务器', start:10, end:15},
+    {type:'switch', name:'核心交换机', start:1, end:5}
+  ]}
+};
+
+function loadPreset(key) {
+  const p = PRESETS[key];
+  planData = p.groups.map(g => ({...g, network: p.network}));
+  renderPlan();
+}
+
+function addPlanRow() {
+  planData.push({type:'other', name:'新设备组', start:200, end:210, network:'192.168.1.0/24'});
+  renderPlan();
+}
+
+function renderPlan() {
+  if (!planData.length) {
+    document.getElementById('planning-table').innerHTML = '<p style="color:#888">请从上方选择预设模板，或点击"添加设备分组"自定义规划。</p>';
+    return;
+  }
+  let html = '<table><thead><tr><th>设备类型</th><th>分组名称</th><th>起始IP</th><th>结束IP</th><th>数量</th><th>操作</th></tr></thead><tbody>';
+  planData.forEach((d,i) => {
+    const t = DEVICE_TYPES[d.type]||DEVICE_TYPES.other;
+    html += `<tr>
+      <td><span class="badge ${t.css}">${t.name}</span></td>
+      <td><input value="${d.name}" onchange="planData[${i}].name=this.value" style="background:transparent;border:1px solid #444;color:#eee;padding:4px;border-radius:4px;width:140px;font-family:monospace"></td>
+      <td>${d.network.split('/')[0].replace(/\.\d+$/,'.'+d.start)}</td>
+      <td>${d.network.split('/')[0].replace(/\.\d+$/,'.'+d.end)}</td>
+      <td>${d.end-d.start+1}</td>
+      <td><button class="btn secondary" style="padding:4px 10px;font-size:12px" onclick="planData.splice(${i},1);renderPlan()">删除</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('planning-table').innerHTML = html;
+}
+
+function exportPlan() {
+  if (!planData.length) { alert('暂无规划数据'); return; }
+  let txt = '=== 工业网络IP规划表 ===\n\n';
+  planData.forEach(d => {
+    const t = DEVICE_TYPES[d.type]||DEVICE_TYPES.other;
+    const prefix = d.network.split('/')[0].replace(/\.\d+$/,'');
+    txt += `[${t.name}] ${d.name}\n  ${prefix}.${d.start} ~ ${prefix}.${d.end} (${d.end-d.start+1}个地址)\n\n`;
+  });
+  navigator.clipboard.writeText(txt).then(()=>alert('已复制到剪贴板！')).catch(()=>prompt('复制以下内容：',txt));
+}
+
+// ========== 4. 冲突检测 ==========
+function checkConflict() {
+  const ip1 = parseIP(document.getElementById('conflict-ip1').value);
+  const ip2 = parseIP(document.getElementById('conflict-ip2').value);
+  const m = parseMaskOrCIDR(document.getElementById('conflict-mask').value);
+  if (!ip1||!ip2||!m) { alert('请输入有效的IP和掩码'); return; }
+  const net1 = (ip1 & m.mask)>>>0;
+  const net2 = (ip2 & m.mask)>>>0;
+  const same = net1 === net2;
+  let html = `<div style="margin-top:10px;padding:12px;border-radius:8px;background:${same?'#1B3A1B':'#3A1B1B'};border:1px solid ${same?'#4CAF50':'#F44336'}">`;
+  if (same) {
+    html += `<span class="status-ok">✅ 同一网段</span> — 两个IP在 <b>${ipToStr(net1)}/${m.cidr}</b> 网段内。`;
+    if (ip1===ip2) html += `<br><span class="status-conflict">⚠️ 两个IP完全相同，存在冲突！</span>`;
+    html += `<br><span style="font-size:13px;color:#aaa">网段: ${ipToStr(net1)} ~ ${ipToStr((net1|~m.mask)>>>0)}</span>`;
+  } else {
+    html += `<span class="status-ok">✅ 不同网段</span> — IP1属于 <b>${ipToStr(net1)}/${m.cidr}</b>，IP2属于 <b>${ipToStr(net2)}/${m.cidr}</b>，无冲突。`;
+  }
+  html += '</div>';
+  document.getElementById('conflict-result').innerHTML = html;
+}
+
+// ========== 5. 设备速查表 ==========
+const DEVICE_DB = [
+  {brand:'西门子',model:'S7-1200',ip:'192.168.0.1',port:'102',protocol:'S7comm (PG/OP)',note:'TIA Portal通信'},
+  {brand:'西门子',model:'S7-1500',ip:'192.168.0.1',port:'102',protocol:'S7comm+',note:'支持OPC UA:4840'},
+  {brand:'西门子',model:'S7-300/400 (CP)',ip:'192.168.0.1',port:'102',protocol:'S7comm',note:'需CP343/CP443模块'},
+  {brand:'西门子',model:'LOGO!',ip:'192.168.0.1',port:'102',protocol:'S7comm',note:'小型控制器'},
+  {brand:'三菱',model:'FX5U',ip:'192.168.1.250',port:'5007',protocol:'SLMP (MC)',note:'GX Works3编程'},
+  {brand:'三菱',model:'iQ-R系列',ip:'192.168.1.250',port:'5007',protocol:'SLMP',note:''},
+  {brand:'三菱',model:'Q系列 (以太网)',ip:'192.168.1.1',port:'5007',protocol:'SLMP/UDP:5006',note:''},
+  {brand:'三菱',model:'GT触摸屏',ip:'192.168.1.250',port:'5007',protocol:'SLMP',note:'GOT2000系列'},
+  {brand:'欧姆龙',model:'NX/NJ系列',ip:'192.168.250.1',port:'9600',protocol:'FINS/UDP',note:'Sysmac Studio'},
+  {brand:'欧姆龙',model:'CJ2M-EIP',ip:'192.168.250.1',port:'9600',protocol:'FINS',note:''},
+  {brand:'欧姆龙',model:'NB触摸屏',ip:'192.168.250.1',port:'80',protocol:'HTTP',note:'Web配置'},
+  {brand:'罗克韦尔AB',model:'CompactLogix',ip:'192.168.1.1',port:'44818',protocol:'EtherNet/IP',note:'RSLogix5000'},
+  {brand:'罗克韦尔AB',model:'ControlLogix',ip:'192.168.1.1',port:'44818',protocol:'EtherNet/IP',note:''},
+  {brand:'罗克韦尔AB',model:'Micro800',ip:'192.168.1.1',port:'44818',protocol:'EtherNet/IP',note:'CCW编程'},
+  {brand:'汇川',model:'H5U/H3U',ip:'192.168.1.100',port:'502',protocol:'Modbus TCP',note:'AutoShop编程'},
+  {brand:'汇川',model:'AM600',ip:'192.168.1.100',port:'502',protocol:'Modbus TCP/EtherCAT',note:''},
+  {brand:'汇川',model:'IT7000触摸屏',ip:'192.168.1.100',port:'502',protocol:'Modbus TCP',note:''},
+  {brand:'信捷',model:'XD/XE系列',ip:'192.168.1.10',port:'502',protocol:'Modbus TCP',note:'XCPPro编程'},
+  {brand:'信捷',model:'TG触摸屏',ip:'192.168.1.10',port:'502',protocol:'Modbus TCP',note:''},
+  {brand:'台达',model:'AS300系列',ip:'192.168.1.5',port:'502',protocol:'Modbus TCP',note:'ISPSoft'},
+  {brand:'台达',model:'DOP触摸屏',ip:'192.168.0.1',port:'502',protocol:'Modbus TCP',note:''},
+  {brand:'永宏',model:'FBS/FBx系列',ip:'192.168.1.1',port:'502',protocol:'Modbus TCP',note:'WinProladder'},
+  {brand:'施耐德',model:'M340/M580',ip:'192.168.1.1',port:'502',protocol:'Modbus TCP',note:'Unity Pro/EcoStruxure'},
+  {brand:'施耐德',model:'M241/M251',ip:'192.168.1.1',port:'502',protocol:'Modbus TCP',note:'SoMachine'},
+  {brand:'倍福',model:'CX系列 (TwinCAT)',ip:'192.168.1.2',port:'48898',protocol:'ADS',note:'TwinCAT3'},
+  {brand:'基恩士',model:'KV-8000',ip:'192.168.0.10',port:'8500',protocol:'KV Ethernet',note:'KV Studio'},
+  {brand:'ABB',model:'AC500',ip:'192.168.1.1',port:'502',protocol:'Modbus TCP',note:'Automation Builder'},
+  {brand:'和利时',model:'LK/LM系列',ip:'192.168.1.10',port:'502',protocol:'Modbus TCP',note:''},
+  {brand:'中控',model:'JX-300XP',ip:'192.168.0.128',port:'1234',protocol:'专有协议',note:'AdvanTrol'},
+  {brand:'MOXA',model:'EDR系列路由',ip:'192.168.127.254',port:'443',protocol:'HTTPS',note:'工业防火墙'},
+  {brand:'MOXA',model:'NPort串口服务器',ip:'192.168.127.254',port:'4001',protocol:'TCP透传',note:''},
+  {brand:'赫斯曼/百通',model:'交换机',ip:'192.168.1.1',port:'80',protocol:'HTTP/HTTPS',note:'Industrial HiVision'},
+  {brand:'华为',model:'S系列工业交换机',ip:'192.168.1.253',port:'80',protocol:'HTTP',note:''},
+  {brand:'西门子',model:'SCALANCE X',ip:'192.168.0.1',port:'80',protocol:'HTTP/SNMP',note:''},
+  {brand:'研华',model:'EKI系列交换机',ip:'192.168.1.1',port:'80',protocol:'HTTP',note:''},
+  {brand:'ABB',model:'ACS580变频器',ip:'192.168.1.1',port:'502',protocol:'Modbus TCP',note:'ABB Ability'},
+  {brand:'西门子',model:'G120变频器',ip:'192.168.0.10',port:'502',protocol:'Modbus TCP/PROFINET',note:'Startdrive'},
+];
+
+// Fix typos in source
+DEVICE_DB.forEach(d=>{ if(d.label && !d.brand) d.brand=d.label; });
+
+function filterDeviceTable() {
+  const q = document.getElementById('device-search').value.toLowerCase();
+  const tbody = document.querySelector('#device-table tbody');
+  const filtered = DEVICE_DB.filter(d =>
+    !q || d.brand.toLowerCase().includes(q) || d.model.toLowerCase().includes(q) || d.protocol.toLowerCase().includes(q) || d.note.toLowerCase().includes(q) || d.ip.includes(q)
+  );
+  tbody.innerHTML = filtered.map(d =>
+    `<tr><td>${d.brand}</td><td>${d.model}</td><td>${d.ip}</td><td>${d.port}</td><td>${d.protocol}</td><td>${d.note}</td></tr>`
+  ).join('');
+}
+
+// ========== 初始化 ==========
+window.addEventListener('DOMContentLoaded', () => {
+  calculateIP();
+  filterDeviceTable();
+  loadPreset('small');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模拟量信号换算器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .preset-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .formula-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px 18px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-dim);
+      margin-top: 12px;
+      white-space: pre-wrap;
+    }
+    .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .result-big {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 18px;
+      font-family: var(--mono);
+      font-size: 22px;
+      text-align: center;
+      color: var(--primary);
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .result-big .copy-btn { position: absolute; top: 8px; right: 8px; }
+    .result-big small { display: block; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+    @media (max-width: 768px) {
+      .calc-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>📊 模拟量信号换算器</h2><p>4-20mA / 0-10V ↔ 工程量互转，支持线性与开方模式</p></div>
+
+    <!-- 快捷预设 -->
+    <div class="card">
+      <div class="card-title">⚡ 快捷预设</div>
+      <div class="preset-row">
+        <button class="btn btn-outline btn-sm" onclick="applyPreset('4-20mA',0,100,'℃','linear')">🌡️ 温度 0-100℃</button>
+        <button class="btn btn-outline btn-sm" onclick="applyPreset('4-20mA',0,1.6,'MPa','linear')">🔧 压力 0-1.6MPa</button>
+        <button class="btn btn-outline btn-sm" onclick="applyPreset('4-20mA',0,100,'m³/h','sqrt')">🌊 流量 0-100m³/h</button>
+        <button class="btn btn-outline btn-sm" onclick="applyPreset('4-20mA',0,10,'m','linear')">📏 液位 0-10m</button>
+        <button class="btn btn-outline btn-sm" onclick="applyPreset('4-20mA',0,100,'%','linear')">📈 百分比 0-100%</button>
+        <button class="btn btn-outline btn-sm" onclick="applyPreset('0-10V',0,100,'℃','linear')">🌡️ 温度 0-10V</button>
+      </div>
+    </div>
+
+    <!-- 参数设置 -->
+    <div class="card">
+      <div class="card-title">⚙️ 参数设置</div>
+      <div class="grid-2">
+        <div>
+          <div class="input-group">
+            <label>信号类型：</label>
+            <select id="sigType" onchange="onParamChange()">
+              <option value="4-20mA">4-20mA（二线制，最常用）</option>
+              <option value="0-10V">0-10V（电压型）</option>
+              <option value="0-5V">0-5V（低压型）</option>
+              <option value="0-20mA">0-20mA（少数设备）</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>计算模式：</label>
+            <div class="toggle-group">
+              <button id="modeLinear" class="active" onclick="setMode('linear')">线性</button>
+              <button id="modeSqrt" onclick="setMode('sqrt')">开方（流量）</button>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="input-group">
+            <label>工程量下限：</label>
+            <input type="number" id="engLow" value="0" oninput="onParamChange()" step="any">
+          </div>
+          <div class="input-group">
+            <label>工程量上限：</label>
+            <input type="number" id="engHigh" value="100" oninput="onParamChange()" step="any">
+          </div>
+          <div class="input-group">
+            <label>工程量单位：</label>
+            <select id="unitSelect" onchange="onUnitChange()">
+              <option value="℃">℃</option>
+              <option value="%">%</option>
+              <option value="bar">bar</option>
+              <option value="MPa">MPa</option>
+              <option value="kPa">kPa</option>
+              <option value="m">m</option>
+              <option value="mm">mm</option>
+              <option value="m³/h">m³/h</option>
+              <option value="t/h">t/h</option>
+              <option value="L/min">L/min</option>
+              <option value="kg">kg</option>
+              <option value="custom">自定义...</option>
+            </select>
+            <input type="text" id="unitCustom" placeholder="输入单位" style="display:none;width:100px;" oninput="onParamChange()">
+          </div>
+        </div>
+      </div>
+
+      <!-- 公式显示 -->
+      <div class="formula-box" id="formulaDisplay"></div>
+    </div>
+
+    <!-- 双向计算 -->
+    <div class="calc-grid">
+      <div class="card">
+        <div class="card-title">📥 信号 → 工程量</div>
+        <div class="input-group">
+          <label id="sigLabel">电流 (mA)：</label>
+          <input type="number" id="sigInput" placeholder="如 12" step="any" oninput="calcForward()">
+        </div>
+        <div class="result-big" id="engResult">
+          —
+          <button class="copy-btn" onclick="copyText(document.getElementById('engResult').firstChild.textContent,this)">复制</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📤 工程量 → 信号</div>
+        <div class="input-group">
+          <label>工程量：</label>
+          <input type="number" id="engInput" placeholder="如 50" step="any" oninput="calcReverse()">
+        </div>
+        <div class="result-big" id="sigResult">
+          —
+          <button class="copy-btn" onclick="copyText(document.getElementById('sigResult').firstChild.textContent,this)">复制</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 常用信号标准速查表 -->
+    <div class="card">
+      <div class="card-title">📋 常用信号标准速查</div>
+      <table>
+        <thead>
+          <tr><th>信号类型</th><th>零点</th><th>满量程</th><th>说明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>4-20mA</td><td>4 mA</td><td>20 mA</td><td>最常用，二线制变送器标准</td></tr>
+          <tr><td>0-10V</td><td>0 V</td><td>10 V</td><td>电压型，常见于楼宇自动化</td></tr>
+          <tr><td>0-5V</td><td>0 V</td><td>5 V</td><td>低压型，部分传感器/PLC</td></tr>
+          <tr><td>0-20mA</td><td>0 mA</td><td>20 mA</td><td>少数设备使用，零点无偏移</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — 模拟量信号换算器</div>
+  <script src="../js/common.js"></script>
+  <script>
+    // Signal type definitions: { low, high, label, unit }
+    const SIGNALS = {
+      '4-20mA':  { low: 4,  high: 20, label: '电流 (mA)', unit: 'mA' },
+      '0-10V':   { low: 0,  high: 10, label: '电压 (V)',  unit: 'V'  },
+      '0-5V':    { low: 0,  high: 5,  label: '电压 (V)',  unit: 'V'  },
+      '0-20mA':  { low: 0,  high: 20, label: '电流 (mA)', unit: 'mA' },
+    };
+
+    let mode = 'linear';
+
+    function getUnit() {
+      const sel = document.getElementById('unitSelect').value;
+      if (sel === 'custom') {
+        return document.getElementById('unitCustom').value || '';
+      }
+      return sel;
+    }
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('modeLinear').classList.toggle('active', m === 'linear');
+      document.getElementById('modeSqrt').classList.toggle('active', m === 'sqrt');
+      updateFormula();
+      calcForward();
+      calcReverse();
+    }
+
+    function onUnitChange() {
+      const sel = document.getElementById('unitSelect').value;
+      document.getElementById('unitCustom').style.display = sel === 'custom' ? 'inline-block' : 'none';
+      onParamChange();
+    }
+
+    function onParamChange() {
+      updateFormula();
+      calcForward();
+      calcReverse();
+    }
+
+    function applyPreset(sig, engLow, engHigh, unit, calcMode) {
+      document.getElementById('sigType').value = sig;
+      document.getElementById('engLow').value = engLow;
+      document.getElementById('engHigh').value = engHigh;
+
+      // Set unit in select or custom
+      const sel = document.getElementById('unitSelect');
+      let found = false;
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === unit) { sel.selectedIndex = i; found = true; break; }
+      }
+      if (!found) {
+        sel.value = 'custom';
+        document.getElementById('unitCustom').style.display = 'inline-block';
+        document.getElementById('unitCustom').value = unit;
+      } else {
+        document.getElementById('unitCustom').style.display = 'none';
+      }
+
+      setMode(calcMode);
+      showToast('已加载预设: ' + sig + ' / ' + engLow + '-' + engHigh + unit, 'success');
+    }
+
+    function updateFormula() {
+      const sig = SIGNALS[document.getElementById('sigType').value];
+      const el = document.getElementById('engLow').value || '0';
+      const eh = document.getElementById('engHigh').value || '100';
+      const u = getUnit();
+
+      document.getElementById('sigLabel').textContent = sig.label + '：';
+      document.getElementById('sigInput').placeholder = '如 ' + ((sig.low + sig.high) / 2).toFixed(1);
+
+      let f = '';
+      if (mode === 'linear') {
+        f = '📐 线性公式：\n';
+        f += `  工程量 = (信号值 − ${sig.low}) / (${sig.high} − ${sig.low}) × (${eh} − ${el}) + ${el}\n`;
+        f += `  信号值 = (工程量 − ${el}) / (${eh} − ${el}) × (${sig.high} − ${sig.low}) + ${sig.low}`;
+      } else {
+        f = '📐 开方公式：\n';
+        f += `  工程量 = √((信号值 − ${sig.low}) / (${sig.high} − ${sig.low})) × (${eh} − ${el}) + ${el}\n`;
+        f += `  信号值 = ((工程量 − ${el}) / (${eh} − ${el}))² × (${sig.high} − ${sig.low}) + ${sig.low}`;
+      }
+      document.getElementById('formulaDisplay').textContent = f;
+    }
+
+    function calcForward() {
+      const sig = SIGNALS[document.getElementById('sigType').value];
+      const el = parseFloat(document.getElementById('engLow').value);
+      const eh = parseFloat(document.getElementById('engHigh').value);
+      const sv = parseFloat(document.getElementById('sigInput').value);
+      const u = getUnit();
+      const box = document.getElementById('engResult');
+
+      if (isNaN(sv) || isNaN(el) || isNaN(eh) || eh === el) {
+        box.firstChild.textContent = '—';
+        return;
+      }
+
+      const ratio = (sv - sig.low) / (sig.high - sig.low);
+      let result;
+
+      if (mode === 'sqrt') {
+        if (ratio < 0) { box.firstChild.textContent = '信号低于下限'; return; }
+        result = Math.sqrt(ratio) * (eh - el) + el;
+      } else {
+        result = ratio * (eh - el) + el;
+      }
+
+      box.firstChild.textContent = result.toFixed(4) + ' ' + u;
+    }
+
+    function calcReverse() {
+      const sig = SIGNALS[document.getElementById('sigType').value];
+      const el = parseFloat(document.getElementById('engLow').value);
+      const eh = parseFloat(document.getElementById('engHigh').value);
+      const ev = parseFloat(document.getElementById('engInput').value);
+      const u = getUnit();
+      const box = document.getElementById('sigResult');
+
+      if (isNaN(ev) || isNaN(el) || isNaN(eh) || eh === el) {
+        box.firstChild.textContent = '—';
+        return;
+      }
+
+      const ratio = (ev - el) / (eh - el);
+      let result;
+
+      if (mode === 'sqrt') {
+        if (ratio < 0) { box.firstChild.textContent = '工程量低于下限'; return; }
+        result = ratio * ratio * (sig.high - sig.low) + sig.low;
+      } else {
+        result = ratio * (sig.high - sig.low) + sig.low;
+      }
+
+      // Clamp to signal range
+      const clamped = Math.max(sig.low, Math.min(sig.high, result));
+      box.firstChild.textContent = clamped.toFixed(4) + ' ' + sig.unit;
+
+      if (result < sig.low || result > sig.high) {
+        box.style.borderColor = 'var(--warn)';
+        box.style.color = 'var(--warn)';
+      } else {
+        box.style.borderColor = 'var(--border)';
+        box.style.color = 'var(--primary)';
+      }
+    }
+
+    // Init
+    updateFormula();
+  </script>
+</body>
+</html>

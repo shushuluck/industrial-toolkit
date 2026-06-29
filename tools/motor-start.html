@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>电机启动压降计算器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>⚡ 电机启动压降计算器</h2><p>输入电机参数和线路条件，计算启动瞬间压降，判断是否超标</p></div>
+
+    <div class="grid-2">
+      <!-- 左列：电机参数 -->
+      <div class="card">
+        <div class="card-title">⚙️ 电机参数</div>
+        <div class="input-group">
+          <label>额定功率：</label>
+          <input type="number" id="power" value="30" step="0.1" min="0.1" style="width:120px;" oninput="calculate()">
+          <span style="color:var(--text-dim);font-size:13px;">kW</span>
+        </div>
+        <div class="input-group">
+          <label>额定电压：</label>
+          <select id="voltage" onchange="calculate()" style="width:120px;">
+            <option value="220">220 V</option>
+            <option value="380" selected>380 V</option>
+            <option value="400">400 V</option>
+            <option value="660">660 V</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>功率因数：</label>
+          <input type="number" id="pf" value="0.85" step="0.01" min="0.1" max="1" style="width:120px;" oninput="calculate()">
+        </div>
+        <div class="input-group">
+          <label>效率：</label>
+          <input type="number" id="eff" value="0.9" step="0.01" min="0.1" max="1" style="width:120px;" oninput="calculate()">
+        </div>
+        <div class="input-group">
+          <label>启动方式：</label>
+          <select id="startMethod" onchange="calculate()" style="width:160px;">
+            <option value="7">直接启动 (7倍)</option>
+            <option value="2.3">星三角启动 (2.3倍)</option>
+            <option value="3" selected>软启动 (3倍)</option>
+            <option value="1.5">变频启动 (1.5倍)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 右列：线路参数 -->
+      <div class="card">
+        <div class="card-title">🔌 线路与变压器</div>
+        <div class="input-group">
+          <label>变压器容量：</label>
+          <input type="number" id="txCap" value="500" step="10" min="10" style="width:120px;" oninput="calculate()">
+          <span style="color:var(--text-dim);font-size:13px;">kVA</span>
+        </div>
+        <div class="input-group">
+          <label>阻抗电压：</label>
+          <input type="number" id="txZ" value="6" step="0.5" min="1" max="20" style="width:120px;" oninput="calculate()">
+          <span style="color:var(--text-dim);font-size:13px;">%</span>
+        </div>
+        <div class="input-group">
+          <label>线路长度：</label>
+          <input type="number" id="cableLen" value="100" step="10" min="1" style="width:120px;" oninput="calculate()">
+          <span style="color:var(--text-dim);font-size:13px;">m</span>
+        </div>
+        <div class="input-group">
+          <label>线缆截面：</label>
+          <select id="cableCSA" onchange="calculate()" style="width:120px;">
+            <option value="2.5">2.5 mm²</option>
+            <option value="4">4 mm²</option>
+            <option value="6">6 mm²</option>
+            <option value="10">10 mm²</option>
+            <option value="16" selected>16 mm²</option>
+            <option value="25">25 mm²</option>
+            <option value="35">35 mm²</option>
+            <option value="50">50 mm²</option>
+            <option value="70">70 mm²</option>
+            <option value="95">95 mm²</option>
+            <option value="120">120 mm²</option>
+            <option value="150">150 mm²</option>
+            <option value="185">185 mm²</option>
+            <option value="240">240 mm²</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>线缆材质：</label>
+          <select id="cableMat" onchange="calculate()" style="width:120px;">
+            <option value="0.0175" selected>铜 (0.0175)</option>
+            <option value="0.0283">铝 (0.0283)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 计算结果 -->
+    <div class="card">
+      <div class="card-title">📊 计算结果</div>
+      <div class="grid-3">
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">额定电流</div>
+          <div id="r-ratedI" style="font-family:var(--mono);font-size:20px;color:var(--primary);">- A</div>
+        </div>
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">启动电流倍数</div>
+          <div id="r-mult" style="font-family:var(--mono);font-size:20px;color:var(--warn);">-</div>
+        </div>
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">启动电流</div>
+          <div id="r-startI" style="font-family:var(--mono);font-size:20px;color:var(--accent);">- A</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
+      <div class="grid-3">
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">线路阻抗</div>
+          <div id="r-lineZ" style="font-family:var(--mono);font-size:18px;">- Ω</div>
+        </div>
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">线路压降</div>
+          <div id="r-lineDrop" style="font-family:var(--mono);font-size:18px;">- V</div>
+        </div>
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">线路压降百分比</div>
+          <div id="r-lineDropPct" style="font-family:var(--mono);font-size:18px;">- %</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
+      <div class="grid-3">
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">母线压降百分比</div>
+          <div id="r-busDropPct" style="font-family:var(--mono);font-size:18px;">- %</div>
+        </div>
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">总压降百分比</div>
+          <div id="r-totalDropPct" style="font-family:var(--mono);font-size:18px;">- %</div>
+        </div>
+        <div>
+          <div style="color:var(--text-dim);font-size:12px;margin-bottom:4px;">判断结果</div>
+          <div id="r-verdict" style="font-size:20px;font-weight:600;">-</div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin:14px 0;"></div>
+      <div id="r-suggestion" style="color:var(--text-dim);font-size:14px;line-height:1.6;"></div>
+    </div>
+
+    <!-- 常用电机参数速查表 -->
+    <div class="card">
+      <div class="card-title">📋 常用电机参数速查表（380V 三相）</div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>功率 (kW)</th>
+              <th>额定电流 (A)</th>
+              <th>直启电流 (A)</th>
+              <th>星三角电流 (A)</th>
+              <th>软启动电流 (A)</th>
+              <th>变频启动电流 (A)</th>
+              <th>推荐线径 (mm²)</th>
+            </tr>
+          </thead>
+          <tbody id="motorTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 启动方式对比表 -->
+    <div class="card">
+      <div class="card-title">🔄 启动方式对比</div>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>启动方式</th>
+              <th>启动倍数</th>
+              <th>启动转矩</th>
+              <th>适用场景</th>
+              <th>优缺点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-accent">直接启动</span></td>
+              <td style="font-family:var(--mono);">7 ~ 8 倍</td>
+              <td style="font-family:var(--mono);">100%</td>
+              <td>≤7.5kW 电机、电网容量充裕</td>
+              <td>线路简单，冲击电流大</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-primary">星三角启动</span></td>
+              <td style="font-family:var(--mono);">~2.3 倍</td>
+              <td style="font-family:var(--mono);">33%</td>
+              <td>空载/轻载启动（风机、泵类空载启动）</td>
+              <td>电流小，转矩也小，切换有冲击</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-success">软启动</span></td>
+              <td style="font-family:var(--mono);">~3 倍</td>
+              <td style="font-family:var(--mono);">50%</td>
+              <td>泵类、风机、传送带</td>
+              <td>平滑启动，设备成本较高</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-warn">变频启动</span></td>
+              <td style="font-family:var(--mono);">~1.5 倍</td>
+              <td style="font-family:var(--mono);">150%</td>
+              <td>需调速场合、精密控制</td>
+              <td>冲击最小，可调速，成本最高</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">工控工具箱 · Industrial Toolkit</div>
+
+  <script src="../js/common.js"></script>
+  <script>
+    // 电阻率：铜=0.0175, 铝=0.0283
+    // 常用电机功率表(kW)
+    const MOTOR_POWERS = [0.37, 0.55, 0.75, 1.1, 1.5, 2.2, 3, 4, 5.5, 7.5, 11, 15, 18.5, 22, 30, 37, 45, 55, 75, 90, 110, 132, 160, 200, 250, 315];
+
+    function calcRatedI(p, u, pf, eff) {
+      return p * 1000 / (Math.sqrt(3) * u * pf * eff);
+    }
+
+    function recommendedCSA(ratedI) {
+      if (ratedI <= 8) return 2.5;
+      if (ratedI <= 12) return 4;
+      if (ratedI <= 17) return 6;
+      if (ratedI <= 28) return 10;
+      if (ratedI <= 38) return 16;
+      if (ratedI <= 52) return 25;
+      if (ratedI <= 70) return 35;
+      if (ratedI <= 95) return 50;
+      if (ratedI <= 125) return 70;
+      if (ratedI <= 165) return 95;
+      if (ratedI <= 195) return 120;
+      if (ratedI <= 230) return 150;
+      if (ratedI <= 280) return 185;
+      return 240;
+    }
+
+    function calculate() {
+      const P = parseFloat(document.getElementById('power').value) || 0;
+      const U = parseFloat(document.getElementById('voltage').value) || 380;
+      const pf = parseFloat(document.getElementById('pf').value) || 0.85;
+      const eff = parseFloat(document.getElementById('eff').value) || 0.9;
+      const startMult = parseFloat(document.getElementById('startMethod').value) || 7;
+      const txCap = parseFloat(document.getElementById('txCap').value) || 500;
+      const txZ = parseFloat(document.getElementById('txZ').value) || 6;
+      const cableLen = parseFloat(document.getElementById('cableLen').value) || 100;
+      const cableCSA = parseFloat(document.getElementById('cableCSA').value) || 16;
+      const rho = parseFloat(document.getElementById('cableMat').value) || 0.0175;
+
+      if (P <= 0 || U <= 0) return;
+
+      // 1. 额定电流
+      const ratedI = calcRatedI(P, U, pf, eff);
+      // 2. 启动电流
+      const startI = ratedI * startMult;
+      // 3. 线路电阻 (单根来回 ×2)
+      const lineR = rho * cableLen * 2 / cableCSA;
+      // 4. 线路压降 = 启动电流 × 线路电阻 × √3 (三相)
+      const lineDrop = startI * lineR * Math.sqrt(3);
+      // 5. 线路压降百分比
+      const lineDropPct = lineDrop / U * 100;
+      // 6. 母线压降百分比 = 启动电流 / (变压器额定电流) × 阻抗电压
+      const txRatedI = txCap * 1000 / (Math.sqrt(3) * U);
+      const busDropPct = (startI / txRatedI) * txZ;
+      // 7. 总压降
+      const totalDropPct = lineDropPct + busDropPct;
+
+      // 更新显示
+      document.getElementById('r-ratedI').textContent = ratedI.toFixed(1) + ' A';
+      document.getElementById('r-mult').textContent = startMult + ' 倍';
+      document.getElementById('r-startI').textContent = startI.toFixed(1) + ' A';
+      document.getElementById('r-lineZ').textContent = (lineR * 1000).toFixed(2) + ' mΩ';
+      document.getElementById('r-lineDrop').textContent = lineDrop.toFixed(1) + ' V';
+      document.getElementById('r-lineDropPct').textContent = lineDropPct.toFixed(2) + ' %';
+      document.getElementById('r-busDropPct').textContent = busDropPct.toFixed(2) + ' %';
+      document.getElementById('r-totalDropPct').textContent = totalDropPct.toFixed(2) + ' %';
+
+      // 判断结果
+      const verdictEl = document.getElementById('r-verdict');
+      const suggestionEl = document.getElementById('r-suggestion');
+      if (totalDropPct < 5) {
+        verdictEl.innerHTML = '<span style="color:var(--success);">✅ 正常</span>';
+        suggestionEl.innerHTML = '💡 压降在允许范围内，线路和启动方式选择合理。';
+      } else if (totalDropPct < 10) {
+        verdictEl.innerHTML = '<span style="color:var(--warn);">⚠️ 临界</span>';
+        let tips = '💡 压降偏大，建议考虑以下措施：<br>';
+        tips += '• 加大电缆截面积以减小线路阻抗<br>';
+        if (startMult >= 5) tips += '• 改用软启动器或变频器降低启动电流<br>';
+        if (busDropPct > 3) tips += '• 增大变压器容量或单独供电<br>';
+        tips += '• 缩短供电线路长度';
+        suggestionEl.innerHTML = tips;
+      } else {
+        verdictEl.innerHTML = '<span style="color:var(--danger);">❌ 超标</span>';
+        let tips = '🚨 压降严重超标，必须整改！建议措施：<br>';
+        tips += '• <b>必须</b>加大电缆截面积（当前可能不足以承载启动电流）<br>';
+        if (startMult >= 3) tips += '• <b>必须</b>改用变频启动（启动倍数降至1.5倍）<br>';
+        if (busDropPct > 5) tips += '• 考虑增大变压器容量或为电机单独设变压器<br>';
+        tips += '• 缩短供电距离';
+        suggestionEl.innerHTML = tips;
+      }
+    }
+
+    // 生成速查表
+    function buildMotorTable() {
+      const tbody = document.getElementById('motorTable');
+      const U = 380, pf = 0.85, eff = 0.9;
+      let html = '';
+      MOTOR_POWERS.forEach(p => {
+        const ratedI = calcRatedI(p, U, pf, eff);
+        const csa = recommendedCSA(ratedI);
+        html += '<tr>';
+        html += '<td style="font-family:var(--mono);">' + p + '</td>';
+        html += '<td style="font-family:var(--mono);">' + ratedI.toFixed(1) + '</td>';
+        html += '<td style="font-family:var(--mono);">' + (ratedI * 7).toFixed(1) + '</td>';
+        html += '<td style="font-family:var(--mono);">' + (ratedI * 2.3).toFixed(1) + '</td>';
+        html += '<td style="font-family:var(--mono);">' + (ratedI * 3).toFixed(1) + '</td>';
+        html += '<td style="font-family:var(--mono);">' + (ratedI * 1.5).toFixed(1) + '</td>';
+        html += '<td style="font-family:var(--mono);">' + csa + '</td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    buildMotorTable();
+    calculate();
+  </script>
+</body>
+</html>

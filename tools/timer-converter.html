@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定时器参数换算器</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .tool-container { max-width: 960px; margin: 0 auto; padding: 20px; }
+        .tool-header { text-align: center; margin-bottom: 30px; }
+        .tool-header h2 { font-size: 1.8em; color: #1a237e; margin-bottom: 8px; }
+        .tool-header p { color: #555; font-size: 1em; }
+        .back-link { display: inline-block; margin-bottom: 16px; color: #1565c0; text-decoration: none; font-size: 0.95em; }
+        .back-link:hover { text-decoration: underline; }
+
+        .section { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+        .section h3 { margin-top: 0; color: #1a237e; border-bottom: 2px solid #e8eaf6; padding-bottom: 8px; }
+
+        .input-row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px; }
+        .input-group { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
+        .input-group label { font-weight: 600; margin-bottom: 6px; color: #333; font-size: 0.9em; }
+        .input-group input, .input-group select { padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; }
+
+        .btn { padding: 10px 24px; border: none; border-radius: 6px; font-size: 1em; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        .btn-primary { background: #1565c0; color: #fff; }
+        .btn-primary:hover { background: #0d47a1; }
+        .btn-secondary { background: #e8eaf6; color: #1a237e; }
+        .btn-secondary:hover { background: #c5cae9; }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+        .result-card { background: #f5f7ff; border: 1px solid #c5cae9; border-radius: 8px; padding: 14px; text-align: center; }
+        .result-card .label { font-size: 0.8em; color: #666; margin-bottom: 4px; }
+        .result-card .value { font-size: 1.4em; font-weight: 700; color: #1a237e; }
+        .result-card .unit { font-size: 0.85em; color: #555; }
+
+        .brand-outputs { margin-top: 16px; }
+        .brand-output-row { display: flex; align-items: center; padding: 10px 14px; border-bottom: 1px solid #eee; }
+        .brand-output-row:last-child { border-bottom: none; }
+        .brand-name { width: 80px; font-weight: 600; color: #333; }
+        .brand-value { flex: 1; font-family: 'Courier New', monospace; color: #1565c0; font-size: 1.05em; }
+
+        .info-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.9em; }
+        .info-table th, .info-table td { padding: 10px 12px; border: 1px solid #ddd; text-align: left; }
+        .info-table th { background: #e8eaf6; color: #1a237e; font-weight: 600; }
+        .info-table tr:nth-child(even) { background: #fafbff; }
+
+        .error { color: #c62828; background: #ffebee; padding: 10px 14px; border-radius: 6px; margin-top: 10px; display: none; }
+        .quick-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .quick-btn { padding: 6px 14px; background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 20px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; }
+        .quick-btn:hover { background: #c5cae9; }
+
+        .formula-box { background: #fffde7; border: 1px solid #fff176; border-radius: 6px; padding: 14px; margin-top: 12px; font-size: 0.9em; }
+        .formula-box code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 0.95em; }
+    </style>
+</head>
+<body>
+<div class="tool-container">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header">
+        <h2>⏱️ 定时器参数换算器</h2>
+        <p>跨品牌定时器格式互转，支持西门子/三菱/欧姆龙/IEC</p>
+    </div>
+
+    <!-- 输入区 -->
+    <div class="section">
+        <h3>📥 输入定时器参数</h3>
+        <div class="input-row">
+            <div class="input-group">
+                <label>品牌</label>
+                <select id="brandSelect">
+                    <option value="siemens">西门子 (S7-1200/1500)</option>
+                    <option value="mitsubishi">三菱 (FX系列)</option>
+                    <option value="omron">欧姆龙</option>
+                    <option value="iec">IEC标准</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>定时器格式</label>
+                <input type="text" id="timerInput" placeholder="如 S5T#500ms 或 T#1h30m" autocomplete="off">
+            </div>
+            <div class="input-group" style="flex:0;">
+                <label>&nbsp;</label>
+                <button class="btn btn-primary" onclick="convert()">换算</button>
+            </div>
+        </div>
+        <div class="quick-btns" id="quickBtns"></div>
+        <div class="error" id="errorMsg"></div>
+    </div>
+
+    <!-- 结果区 -->
+    <div class="section" id="resultSection" style="display:none;">
+        <h3>📊 换算结果</h3>
+        <div class="results-grid">
+            <div class="result-card"><div class="label">小时</div><div class="value" id="resH">-</div><div class="unit">h</div></div>
+            <div class="result-card"><div class="label">分钟</div><div class="value" id="resM">-</div><div class="unit">min</div></div>
+            <div class="result-card"><div class="label">秒</div><div class="value" id="resS">-</div><div class="unit">s</div></div>
+            <div class="result-card"><div class="label">毫秒</div><div class="value" id="resMs">-</div><div class="unit">ms</div></div>
+        </div>
+
+        <h3 style="margin-top:24px;">🔄 各品牌格式</h3>
+        <div class="brand-outputs">
+            <div class="brand-output-row"><span class="brand-name">西门子</span><span class="brand-value" id="outSiemens">-</span></div>
+            <div class="brand-output-row"><span class="brand-name">三菱</span><span class="brand-value" id="outMitsubishi">-</span></div>
+            <div class="brand-output-row"><span class="brand-name">欧姆龙</span><span class="brand-value" id="outOmron">-</span></div>
+            <div class="brand-output-row"><span class="brand-name">IEC</span><span class="brand-value" id="outIec">-</span></div>
+        </div>
+
+        <h3 style="margin-top:24px;">🔧 等效定时器设定值</h3>
+        <div id="equivTable"></div>
+    </div>
+
+    <!-- 参考表 -->
+    <div class="section">
+        <h3>📋 定时器类型参考表</h3>
+        <table class="info-table">
+            <thead>
+                <tr><th>品牌/型号</th><th>定时器类型</th><th>时间基准</th><th>设定范围</th><th>格式示例</th></tr>
+            </thead>
+            <tbody>
+                <tr><td rowspan="3">西门子 S7-1200</td><td>TP</td><td>1ms</td><td>1ms ~ 2.14s</td><td>T#500ms</td></tr>
+                <tr><td>TON/TOF</td><td>10ms</td><td>10ms ~ 21.4s</td><td>T#500ms</td></tr>
+                <tr><td>TON (S5TIME)</td><td>100ms</td><td>100ms ~ 2m13s</td><td>S5T#1M30S</td></tr>
+                <tr><td rowspan="3">三菱 FX</td><td>T0~T199</td><td>100ms</td><td>0.1s ~ 3276.7s</td><td>K100 (=10s)</td></tr>
+                <tr><td>T200~T245</td><td>10ms</td><td>0.01s ~ 327.67s</td><td>K100 (=1s)</td></tr>
+                <tr><td>T246~T249</td><td>1ms</td><td>0.001s ~ 32.767s</td><td>K100 (=0.1s)</td></tr>
+                <tr><td rowspan="2">欧姆龙</td><td>TIM</td><td>0.1s</td><td>0 ~ 9999×0.1s</td><td>TIM 001 #100</td></tr>
+                <tr><td>TIMH</td><td>0.01s</td><td>0 ~ 9999×0.01s</td><td>TIMH 001 #100</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 常用换算速查 -->
+    <div class="section">
+        <h3>📐 常用时间换算速查</h3>
+        <div class="formula-box">
+            <p><strong>基本换算：</strong></p>
+            <p>1 秒 (s) = <code>1,000</code> 毫秒 (ms)</p>
+            <p>1 分钟 (min) = <code>60</code> 秒 = <code>60,000</code> ms</p>
+            <p>1 小时 (h) = <code>60</code> 分钟 = <code>3,600</code> 秒 = <code>3,600,000</code> ms</p>
+            <br>
+            <p><strong>三菱 K值计算：</strong></p>
+            <p>设定时间 = K值 × 基准时间</p>
+            <p>例：<code>K100</code> × <code>100ms</code> 基准 = <code>10,000ms</code> = <code>10s</code></p>
+            <br>
+            <p><strong>西门子 S5TIME：</strong></p>
+            <p>格式：<code>S5T#XhYmZsWms</code>（X小时Y分Z秒W毫秒）</p>
+            <p>例：<code>S5T#1M30S</code> = 1分30秒 = 90秒</p>
+            <br>
+            <p><strong>IEC TIME：</strong></p>
+            <p>格式：<code>T#</code> 或 <code>TIME#</code> 后接时间单位</p>
+            <p>例：<code>T#1h30m15s</code> 或 <code>TIME#2.5s</code></p>
+        </div>
+    </div>
+</div>
+
+<script src="../js/common.js"></script>
+<script>
+// Quick button examples per brand
+const quickExamples = {
+    siemens: ['S5T#500ms', 'S5T#2s', 'S5T#1M30S', 'T#500ms', 'T#1h30m', 'T#5s'],
+    mitsubishi: ['K100', 'K500', 'K36000', 'K10', 'K50'],
+    omron: ['TIM 001 #10', 'TIM 001 #100', 'T#500ms', 'T#2s'],
+    iec: ['T#500ms', 'T#1h30m', 'TIME#2.5s', 'T#10s', 'T#30m']
+};
+
+function renderQuickBtns() {
+    const brand = document.getElementById('brandSelect').value;
+    const container = document.getElementById('quickBtns');
+    container.innerHTML = quickExamples[brand].map(v =>
+        `<span class="quick-btn" onclick="document.getElementById('timerInput').value='${v}';convert()">${v}</span>`
+    ).join('');
+}
+
+document.getElementById('brandSelect').addEventListener('change', renderQuickBtns);
+renderQuickBtns();
+
+// Parse input to milliseconds
+function parseToMs(brand, input) {
+    const raw = input.trim();
+    if (!raw) throw new Error('请输入定时器参数');
+
+    if (brand === 'siemens') {
+        // S5T#XhYmZsWms or T#XhYmZsWms
+        const s5t = raw.match(/^S5T#([\d.]+)(ms|s|m|h)?([\d.]+)?(ms|s|m|h)?([\d.]+)?(ms|s|m|h)?([\d.]+)?(ms|s|m|h)?$/i);
+        if (s5t) {
+            let ms = 0;
+            const parts = [s5t[1]+s5t[2], s5t[3]?s5t[3]+s5t[4]:'', s5t[5]?s5t[5]+s5t[6]:'', s5t[7]?s5t[7]+s5t[8]:''];
+            for (const p of parts) {
+                if (!p) continue;
+                const m = p.match(/^([\d.]+)(ms|s|m|h)$/i);
+                if (m) ms += toMs(parseFloat(m[1]), m[2]);
+            }
+            if (ms > 0) return ms;
+        }
+        return parseIecTime(raw) || parseIecTime2(raw);
+    }
+
+    if (brand === 'mitsubishi') {
+        // K value - default 100ms base, or D for register
+        const kMatch = raw.match(/^K(\d+)$/i);
+        if (kMatch) return parseInt(kMatch[1]) * 100; // default 100ms
+        const dMatch = raw.match(/^D(\d+)$/i);
+        if (dMatch) return parseInt(dMatch[1]) * 100; // assume 100ms base
+        throw new Error('三菱格式：请输入 K值（如 K100）或 D寄存器（如 D100）');
+    }
+
+    if (brand === 'omron') {
+        // TIM xxx #YYY (0.1s base) or T#... / IEC format
+        const timMatch = raw.match(/^TIM\s*\d+\s*#(\d+)$/i);
+        if (timMatch) return parseInt(timMatch[1]) * 100; // 0.1s = 100ms
+        const timhMatch = raw.match(/^TIMH\s*\d+\s*#(\d+)$/i);
+        if (timhMatch) return parseInt(timhMatch[1]) * 10; // 0.01s = 10ms
+        return parseIecTime(raw) || parseIecTime2(raw);
+    }
+
+    if (brand === 'iec') {
+        return parseIecTime(raw) || parseIecTime2(raw);
+    }
+
+    throw new Error('无法解析输入');
+}
+
+function toMs(val, unit) {
+    unit = unit.toLowerCase();
+    if (unit === 'ms') return val;
+    if (unit === 's') return val * 1000;
+    if (unit === 'm') return val * 60000;
+    if (unit === 'h') return val * 3600000;
+    return val;
+}
+
+function parseIecTime(raw) {
+    // T#1h30m15s500ms or TIME#...
+    const match = raw.match(/^(?:TIME|T)#([\d.]+(?:ms|s|m|h)(?:[\d.]+(?:ms|s|m|h))*)$/i);
+    if (!match) return null;
+    const body = match[1];
+    let ms = 0;
+    const re = /([\d.]+)(ms|s|m|h)/gi;
+    let m;
+    while ((m = re.exec(body)) !== null) {
+        ms += toMs(parseFloat(m[1]), m[2]);
+    }
+    return ms > 0 ? ms : null;
+}
+
+function parseIecTime2(raw) {
+    // Simple: T#5s, T#500ms
+    const m = raw.match(/^(?:TIME|T)#([\d.]+)(ms|s|m|h)$/i);
+    if (m) return toMs(parseFloat(m[1]), m[2]);
+    return null;
+}
+
+function msToH(ms) { return (ms / 3600000).toFixed(6).replace(/\.?0+$/, '') || '0'; }
+function msToMin(ms) { return (ms / 60000).toFixed(6).replace(/\.?0+$/, '') || '0'; }
+function msToS(ms) { return (ms / 1000).toFixed(6).replace(/\.?0+$/, '') || '0'; }
+function msToMs(ms) { return ms.toString(); }
+
+// Format ms to Siemens S5TIME
+function toSiemens(ms) {
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    const r = ms % 1000;
+    let parts = [];
+    if (h > 0) parts.push(h + 'h');
+    if (m > 0) parts.push(m + 'm');
+    if (s > 0) parts.push(s + 's');
+    if (r > 0) parts.push(r + 'ms');
+    return parts.length ? 'T#' + parts.join('') : 'T#0ms';
+}
+
+// Format ms to Mitsubishi K (100ms base)
+function toMitsubishi(ms) {
+    const k = Math.round(ms / 100);
+    return `K${k}（100ms基准，${(k * 100 / 1000).toFixed(3).replace(/\.?0+$/, '')}s）`;
+}
+
+// Format ms to Omron TIM
+function toOmron(ms) {
+    const tim = Math.round(ms / 100);
+    return `TIM #${tim}（0.1s基准，${(tim * 100 / 1000).toFixed(3).replace(/\.?0+$/, '')}s）`;
+}
+
+// Format ms to IEC
+function toIec(ms) {
+    return toSiemens(ms).replace(/^T#/, 'T#');
+}
+
+function convert() {
+    const brand = document.getElementById('brandSelect').value;
+    const input = document.getElementById('timerInput').value;
+    const errEl = document.getElementById('errorMsg');
+    const resultSec = document.getElementById('resultSection');
+
+    errEl.style.display = 'none';
+
+    try {
+        const ms = parseToMs(brand, input);
+        if (ms < 0) throw new Error('时间值不能为负');
+
+        resultSec.style.display = 'block';
+
+        document.getElementById('resH').textContent = msToH(ms);
+        document.getElementById('resM').textContent = msToMin(ms);
+        document.getElementById('resS').textContent = msToS(ms);
+        document.getElementById('resMs').textContent = msToMs(ms);
+
+        document.getElementById('outSiemens').textContent = toSiemens(ms);
+        document.getElementById('outMitsubishi').textContent = toMitsubishi(ms);
+        document.getElementById('outOmron').textContent = toOmron(ms);
+        document.getElementById('outIec').textContent = toIec(ms);
+
+        // Equivalent table
+        const k100 = Math.round(ms / 100);   // 三菱 100ms base
+        const k10 = Math.round(ms / 10);     // 三菱 10ms base
+        const k1 = Math.round(ms);           // 三菱 1ms base
+        const tim = Math.round(ms / 100);    // 欧姆龙 0.1s
+        const timh = Math.round(ms / 10);    // 欧姆龙 0.01s
+
+        document.getElementById('equivTable').innerHTML = `
+        <table class="info-table">
+            <thead><tr><th>品牌</th><th>定时器类型</th><th>基准</th><th>等效设定值</th><th>实际时间</th></tr></thead>
+            <tbody>
+                <tr><td>西门子</td><td>TON (S5TIME)</td><td>-</td><td>${toSiemens(ms)}</td><td>${msToS(ms)}s</td></tr>
+                <tr><td>三菱</td><td>T0~T199</td><td>100ms</td><td>K${k100}</td><td>${(k100*100/1000).toFixed(3).replace(/\\.?0+$/,'')}s</td></tr>
+                <tr><td>三菱</td><td>T200~T245</td><td>10ms</td><td>K${k10}</td><td>${(k10*10/1000).toFixed(3).replace(/\\.?0+$/,'')}s</td></tr>
+                <tr><td>三菱</td><td>T246~T249</td><td>1ms</td><td>K${k1}</td><td>${(k1/1000).toFixed(3).replace(/\\.?0+$/,'')}s</td></tr>
+                <tr><td>欧姆龙</td><td>TIM</td><td>0.1s</td><td>TIM #${tim}</td><td>${(tim*100/1000).toFixed(3).replace(/\\.?0+$/,'')}s</td></tr>
+                <tr><td>欧姆龙</td><td>TIMH</td><td>0.01s</td><td>TIMH #${timh}</td><td>${(timh*10/1000).toFixed(3).replace(/\\.?0+$/,'')}s</td></tr>
+                <tr><td>IEC</td><td>TON/TOF</td><td>-</td><td>${toIec(ms)}</td><td>${msToS(ms)}s</td></tr>
+            </tbody>
+        </table>`;
+    } catch (e) {
+        errEl.textContent = '⚠️ ' + e.message;
+        errEl.style.display = 'block';
+        resultSec.style.display = 'none';
+    }
+}
+
+// Allow Enter key to trigger conversion
+document.getElementById('timerInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') convert();
+});
+</script>
+</body>
+</html>

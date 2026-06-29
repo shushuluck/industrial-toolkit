@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电缆载流量速查 - 工业工具箱</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .result-card.main {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .result-card .label { font-size: 14px; opacity: 0.9; }
+        .result-card .value { font-size: 32px; font-weight: 700; margin: 8px 0; }
+        .result-card .unit { font-size: 14px; opacity: 0.8; }
+        .lookup-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+        .lookup-table th, .lookup-table td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: center;
+        }
+        .lookup-table th {
+            background: #f0f4ff;
+            font-weight: 600;
+        }
+        .lookup-table tr:hover { background: #f9f9ff; }
+        .lookup-table caption {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-align: left;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 30px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+        @media (max-width: 600px) {
+            .result-card.main { grid-column: span 1; }
+            .result-card .value { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header">
+        <h2>🔌 电缆载流量速查</h2>
+        <p>输入截面积、材质、敷设方式，自动计算安全载流量和降容系数</p>
+    </div>
+
+    <div class="card">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="section">电缆截面积（mm²）</label>
+                <select id="section">
+                    <option value="1.5">1.5</option>
+                    <option value="2.5">2.5</option>
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                    <option value="10">10</option>
+                    <option value="16" selected>16</option>
+                    <option value="25">25</option>
+                    <option value="35">35</option>
+                    <option value="50">50</option>
+                    <option value="70">70</option>
+                    <option value="95">95</option>
+                    <option value="120">120</option>
+                    <option value="150">150</option>
+                    <option value="185">185</option>
+                    <option value="240">240</option>
+                    <option value="300">300</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="material">材质</label>
+                <select id="material">
+                    <option value="cu">铜</option>
+                    <option value="al">铝</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="install">敷设方式</label>
+                <select id="install">
+                    <option value="air">空气中敷设</option>
+                    <option value="conduit">穿管敷设</option>
+                    <option value="trench">电缆沟敷设</option>
+                    <option value="buried">地埋敷设</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="temp">环境温度（℃）</label>
+                <select id="temp">
+                    <option value="20">20</option>
+                    <option value="25">25</option>
+                    <option value="30" selected>30</option>
+                    <option value="35">35</option>
+                    <option value="40">40</option>
+                    <option value="45">45</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="bundle">并排根数</label>
+                <select id="bundle">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="10">10</option>
+                    <option value="12">12</option>
+                    <option value="16">16</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+        </div>
+        <button class="btn" onclick="calculate()" style="margin-top:16px;width:100%">计算载流量</button>
+    </div>
+
+    <div id="results" style="display:none">
+        <div class="result-grid">
+            <div class="result-card">
+                <div class="label">基础载流量</div>
+                <div class="value" id="baseCurrent">—</div>
+                <div class="unit">A（铜芯·空气中·30℃）</div>
+            </div>
+            <div class="result-card">
+                <div class="label">材质系数</div>
+                <div class="value" id="matFactor">—</div>
+                <div class="unit" id="matFactorLabel">—</div>
+            </div>
+            <div class="result-card">
+                <div class="label">敷设方式系数</div>
+                <div class="value" id="installFactor">—</div>
+                <div class="unit" id="installFactorLabel">—</div>
+            </div>
+            <div class="result-card">
+                <div class="label">温度修正系数</div>
+                <div class="value" id="tempFactor">—</div>
+                <div class="unit" id="tempFactorLabel">—</div>
+            </div>
+            <div class="result-card">
+                <div class="label">并排降容系数</div>
+                <div class="value" id="bundleFactor">—</div>
+                <div class="unit" id="bundleFactorLabel">—</div>
+            </div>
+            <div class="result-card main">
+                <div class="label">✅ 最终安全载流量</div>
+                <div class="value" id="finalCurrent">—</div>
+                <div class="unit">A</div>
+            </div>
+            <div class="result-card main">
+                <div class="label">⚡ 可带功率估算（三相380V·cosφ=0.85）</div>
+                <div class="value" id="power">—</div>
+                <div class="unit">kW</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 电机功率线径速查表 -->
+    <div class="section-title">⚡ 常用电机功率 → 线径速查（三相380V）</div>
+    <table class="lookup-table">
+        <tr>
+            <th>电机功率 (kW)</th>
+            <th>额定电流 (A)</th>
+            <th>推荐铜线截面 (mm²)</th>
+        </tr>
+        <tr><td>0.75</td><td>2.0</td><td>1.5</td></tr>
+        <tr><td>1.5</td><td>3.7</td><td>2.5</td></tr>
+        <tr><td>2.2</td><td>5.3</td><td>2.5</td></tr>
+        <tr><td>3.0</td><td>6.8</td><td>4</td></tr>
+        <tr><td>4.0</td><td>8.8</td><td>4</td></tr>
+        <tr><td>5.5</td><td>12</td><td>6</td></tr>
+        <tr><td>7.5</td><td>16</td><td>10</td></tr>
+        <tr><td>11</td><td>22</td><td>16</td></tr>
+        <tr><td>15</td><td>30</td><td>16</td></tr>
+        <tr><td>18.5</td><td>36</td><td>25</td></tr>
+        <tr><td>22</td><td>43</td><td>25</td></tr>
+        <tr><td>30</td><td>58</td><td>35</td></tr>
+        <tr><td>37</td><td>70</td><td>50</td></tr>
+        <tr><td>45</td><td>84</td><td>70</td></tr>
+        <tr><td>55</td><td>103</td><td>95</td></tr>
+    </table>
+
+    <script src="../js/common.js"></script>
+    <script>
+    // 铜芯基准载流量（空气中·30℃·单根）GB/T 16895 / IEC 60364
+    const BASE_CU_AIR = {
+        1.5:18, 2.5:25, 4:34, 6:44, 10:61, 16:82, 25:108, 35:135,
+        50:163, 70:202, 95:243, 120:278, 150:318, 185:362, 240:424, 300:486
+    };
+
+    const INSTALL_FACTORS = { air:1.0, conduit:0.8, trench:0.9, buried:0.85 };
+    const INSTALL_LABELS = { air:'空气中', conduit:'穿管', trench:'电缆沟', buried:'地埋' };
+    const MAT_FACTORS = { cu:1.0, al:0.78 };
+    const MAT_LABELS = { cu:'铜芯', al:'铝芯（×0.78）' };
+
+    const TEMP_FACTORS = { 20:1.08, 25:1.04, 30:1.00, 35:0.96, 40:0.91, 45:0.87, 50:0.82 };
+    const BUNDLE_FACTORS = { 1:1.00, 2:0.80, 3:0.70, 4:0.65, 5:0.60, 6:0.57, 8:0.52, 10:0.48, 12:0.45, 16:0.41, 20:0.38 };
+
+    function calculate() {
+        const sec = parseFloat(document.getElementById('section').value);
+        const mat = document.getElementById('material').value;
+        const inst = document.getElementById('install').value;
+        const temp = parseFloat(document.getElementById('temp').value);
+        const bundle = parseInt(document.getElementById('bundle').value);
+
+        const base = BASE_CU_AIR[sec] || 0;
+        const mF = MAT_FACTORS[mat];
+        const iF = INSTALL_FACTORS[inst];
+        const tF = TEMP_FACTORS[temp];
+        const bF = BUNDLE_FACTORS[bundle];
+
+        const final = Math.round(base * mF * iF * tF * bF);
+        const power = (final * 1.732 * 380 * 0.85 / 1000).toFixed(1);
+
+        document.getElementById('baseCurrent').textContent = base;
+        document.getElementById('matFactor').textContent = mF.toFixed(2);
+        document.getElementById('matFactorLabel').textContent = MAT_LABELS[mat];
+        document.getElementById('installFactor').textContent = iF.toFixed(2);
+        document.getElementById('installFactorLabel').textContent = INSTALL_LABELS[inst];
+        document.getElementById('tempFactor').textContent = tF.toFixed(2);
+        document.getElementById('tempFactorLabel').textContent = temp + '℃';
+        document.getElementById('bundleFactor').textContent = bF.toFixed(2);
+        document.getElementById('bundleFactorLabel').textContent = bundle + '根并排';
+        document.getElementById('finalCurrent').textContent = final;
+        document.getElementById('power').textContent = power;
+
+        document.getElementById('results').style.display = 'block';
+        document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLC变量表工具 | 工业工具集</title>
+<link rel="stylesheet" href="../css/style.css">
+<style>
+/* === PLC Variables Tool Styles === */
+.pv-container { max-width:1200px; margin:0 auto; padding:16px; }
+
+.pv-section { background:var(--card-bg,#1e1e2e); border:1px solid var(--border-color,#333); border-radius:10px; padding:20px; margin-bottom:18px; }
+.pv-section h3 { margin:0 0 14px; font-size:16px; color:var(--accent,#7aa2f7); display:flex; align-items:center; gap:8px; }
+.pv-section h3::before { content:''; display:inline-block; width:4px; height:18px; background:var(--accent,#7aa2f7); border-radius:2px; }
+
+.pv-row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin-bottom:12px; }
+.pv-field { display:flex; flex-direction:column; gap:4px; }
+.pv-field label { font-size:12px; color:var(--text-dim,#888); }
+.pv-field select, .pv-field input { padding:7px 10px; border-radius:6px; border:1px solid var(--border-color,#333); background:var(--bg,#111); color:var(--text,#ccc); font-size:13px; }
+.pv-field select:focus, .pv-field input:focus { outline:none; border-color:var(--accent,#7aa2f7); }
+
+textarea.pv-input { width:100%; min-height:160px; resize:vertical; padding:10px; border-radius:8px; border:1px solid var(--border-color,#333); background:var(--bg,#111); color:var(--text,#ccc); font-family:monospace; font-size:13px; line-height:1.5; }
+textarea.pv-input:focus { outline:none; border-color:var(--accent,#7aa2f7); }
+
+.pv-btn { padding:8px 18px; border-radius:6px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:all .15s; }
+.pv-btn-primary { background:var(--accent,#7aa2f7); color:#fff; }
+.pv-btn-primary:hover { filter:brightness(1.15); }
+.pv-btn-secondary { background:var(--card-bg,#1e1e2e); color:var(--text,#ccc); border:1px solid var(--border-color,#333); }
+.pv-btn-secondary:hover { border-color:var(--accent,#7aa2f7); color:var(--accent,#7aa2f7); }
+.pv-btn-danger { background:#f7768e; color:#fff; }
+.pv-btn-danger:hover { filter:brightness(1.1); }
+.pv-btn-sm { padding:5px 12px; font-size:12px; }
+
+.pv-btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+
+.pv-table-wrap { overflow-x:auto; margin-top:10px; border-radius:8px; border:1px solid var(--border-color,#333); }
+table.pv-table { width:100%; border-collapse:collapse; font-size:13px; }
+table.pv-table th { background:var(--bg,#111); color:var(--accent,#7aa2f7); padding:8px 10px; text-align:left; font-weight:600; white-space:nowrap; position:sticky; top:0; }
+table.pv-table td { padding:6px 10px; border-top:1px solid var(--border-color,#222); white-space:nowrap; }
+table.pv-table tr:hover td { background:rgba(122,162,247,.06); }
+table.pv-table td input { background:transparent; border:1px solid transparent; color:var(--text,#ccc); padding:3px 6px; border-radius:4px; width:100%; font-size:13px; font-family:monospace; }
+table.pv-table td input:focus { border-color:var(--accent,#7aa2f7); outline:none; background:var(--bg,#111); }
+table.pv-table td .del-row { cursor:pointer; color:#f7768e; opacity:.5; }
+table.pv-table td .del-row:hover { opacity:1; }
+
+.pv-stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; }
+.pv-stat-card { background:var(--bg,#111); border:1px solid var(--border-color,#333); border-radius:8px; padding:12px; text-align:center; }
+.pv-stat-card .num { font-size:28px; font-weight:700; color:var(--accent,#7aa2f7); }
+.pv-stat-card .lbl { font-size:11px; color:var(--text-dim,#888); margin-top:2px; }
+
+.pv-map-table { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
+.pv-map-table th, .pv-map-table td { padding:5px 8px; border:1px solid var(--border-color,#333); text-align:center; }
+.pv-map-table th { background:var(--bg,#111); color:var(--accent,#7aa2f7); }
+
+.pv-toast { position:fixed; bottom:20px; right:20px; padding:10px 20px; border-radius:8px; background:#9ece6a; color:#111; font-size:13px; font-weight:600; z-index:9999; opacity:0; transform:translateY(10px); transition:all .3s; pointer-events:none; }
+.pv-toast.show { opacity:1; transform:translateY(0); }
+
+.pv-dropzone { border:2px dashed var(--border-color,#333); border-radius:8px; padding:30px; text-align:center; color:var(--text-dim,#888); cursor:pointer; transition:border-color .2s; margin-bottom:12px; }
+.pv-dropzone:hover, .pv-dropzone.dragover { border-color:var(--accent,#7aa2f7); color:var(--accent,#7aa2f7); }
+.pv-dropzone input { display:none; }
+</style>
+</head>
+<body>
+<a href="../index.html" class="back-link">← 返回主页</a>
+<div class="tool-header"><h2>📋 PLC变量表工具</h2><p>变量表CSV格式转换，支持西门子/三菱/欧姆龙互转</p></div>
+
+<div class="pv-container">
+
+  <!-- Import Section -->
+  <div class="pv-section">
+    <h3>📥 导入变量表</h3>
+    <div class="pv-row">
+      <div class="pv-field">
+        <label>源格式</label>
+        <select id="srcFormat">
+          <option value="auto">自动识别</option>
+          <option value="siemens">西门子 TIA Portal</option>
+          <option value="mitsubishi">三菱 GX Works</option>
+          <option value="omron">欧姆龙 CX-Programmer</option>
+          <option value="generic">通用CSV</option>
+        </select>
+      </div>
+      <div class="pv-field">
+        <label>分隔符</label>
+        <select id="delimiter">
+          <option value=",">逗号 (,)</option>
+          <option value=";">分号 (;)</option>
+          <option value="	">Tab</option>
+        </select>
+      </div>
+      <div class="pv-field">
+        <label>首行为标题</label>
+        <select id="hasHeader">
+          <option value="yes">是</option>
+          <option value="no">否</option>
+        </select>
+      </div>
+      <button class="pv-btn pv-btn-primary" onclick="doParse()">解析</button>
+      <button class="pv-btn pv-btn-secondary" onclick="loadSample()">加载示例</button>
+    </div>
+    <div class="pv-dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+      📁 拖拽CSV文件到此处，或点击选择文件
+      <input type="file" id="fileInput" accept=".csv,.txt,.tsv">
+    </div>
+    <textarea id="csvInput" class="pv-input" placeholder="粘贴CSV变量表数据...&#10;示例（西门子）：&#10;Name,Address,Data Type,Comment&#10;Start_Button,I0.0,BOOL,启动按钮&#10;Motor_Run,Q0.0,BOOL,电机运行&#10;Speed_Set,MW0,INT,速度设定"></textarea>
+  </div>
+
+  <!-- Variable Table -->
+  <div class="pv-section" id="tableSection" style="display:none">
+    <h3>📊 变量表 <span id="countBadge" style="font-size:12px;background:var(--accent,#7aa2f7);color:#fff;padding:2px 8px;border-radius:10px;margin-left:8px">0</span></h3>
+    <div class="pv-table-wrap" style="max-height:400px;overflow-y:auto">
+      <table class="pv-table" id="varTable">
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th style="min-width:140px">变量名</th>
+            <th style="min-width:120px">地址</th>
+            <th style="min-width:100px">数据类型</th>
+            <th style="min-width:180px">注释</th>
+            <th style="width:30px"></th>
+          </tr>
+        </thead>
+        <tbody id="varBody"></tbody>
+      </table>
+    </div>
+    <div class="pv-btn-group" style="margin-top:12px">
+      <button class="pv-btn pv-btn-secondary pv-btn-sm" onclick="addRow()">＋ 添加行</button>
+      <button class="pv-btn pv-btn-danger pv-btn-sm" onclick="clearAll()">清空</button>
+    </div>
+  </div>
+
+  <!-- Batch Operations -->
+  <div class="pv-section" id="batchSection" style="display:none">
+    <h3>🔧 批量操作</h3>
+    <div class="pv-row">
+      <div class="pv-field">
+        <label>前缀</label>
+        <input id="prefixVal" placeholder="如 PLC1_" style="width:120px">
+      </div>
+      <button class="pv-btn pv-btn-secondary pv-btn-sm" onclick="batchPrefix()">添加前缀</button>
+      <div class="pv-field">
+        <label>后缀</label>
+        <input id="suffixVal" placeholder="如 _Tag" style="width:120px">
+      </div>
+      <button class="pv-btn pv-btn-secondary pv-btn-sm" onclick="batchSuffix()">添加后缀</button>
+    </div>
+    <div class="pv-row">
+      <div class="pv-field">
+        <label>地址偏移</label>
+        <input id="offsetVal" type="number" value="0" style="width:80px">
+      </div>
+      <button class="pv-btn pv-btn-secondary pv-btn-sm" onclick="batchOffset()">应用偏移</button>
+      <div class="pv-field">
+        <label>替换类型</label>
+        <select id="replaceFrom">
+          <option value="">--选择--</option>
+          <option value="BOOL">BOOL</option><option value="BYTE">BYTE</option>
+          <option value="INT">INT</option><option value="DINT">DINT</option>
+          <option value="REAL">REAL</option><option value="STRING">STRING</option>
+          <option value="WORD">WORD</option><option value="DWORD">DWORD</option>
+        </select>
+      </div>
+      <span style="color:var(--text-dim,#888)">→</span>
+      <div class="pv-field">
+        <label>目标类型</label>
+        <select id="replaceTo">
+          <option value="">--选择--</option>
+          <option value="BOOL">BOOL</option><option value="BIT">BIT</option>
+          <option value="BYTE">BYTE</option><option value="INT">INT</option>
+          <option value="DINT">DINT</option><option value="REAL">REAL</option>
+          <option value="FLOAT">FLOAT</option><option value="STRING">STRING</option>
+          <option value="WORD">WORD</option><option value="DWORD">DWORD</option>
+        </select>
+      </div>
+      <button class="pv-btn pv-btn-secondary pv-btn-sm" onclick="batchReplaceType()">替换类型</button>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="pv-section" id="statsSection" style="display:none">
+    <h3>📈 变量统计</h3>
+    <div class="pv-stats" id="statsGrid"></div>
+  </div>
+
+  <!-- Data Type Mapping Reference -->
+  <div class="pv-section">
+    <h3>🗺️ 数据类型映射表</h3>
+    <table class="pv-map-table">
+      <thead><tr><th>西门子</th><th>三菱</th><th>欧姆龙</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>BOOL</td><td>BIT</td><td>BOOL</td><td>位</td></tr>
+        <tr><td>BYTE</td><td>BYTE</td><td>BYTE</td><td>字节</td></tr>
+        <tr><td>INT</td><td>INT</td><td>INT</td><td>整数</td></tr>
+        <tr><td>DINT</td><td>DINT</td><td>DINT</td><td>双整数</td></tr>
+        <tr><td>REAL</td><td>FLOAT</td><td>REAL</td><td>浮点数</td></tr>
+        <tr><td>STRING</td><td>STRING</td><td>STRING</td><td>字符串</td></tr>
+        <tr><td>WORD</td><td>WORD</td><td>WORD</td><td>字</td></tr>
+        <tr><td>DWORD</td><td>DWORD</td><td>DWORD</td><td>双字</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Export -->
+  <div class="pv-section" id="exportSection" style="display:none">
+    <h3>📤 导出变量表</h3>
+    <div class="pv-row">
+      <div class="pv-field">
+        <label>目标格式</label>
+        <select id="dstFormat">
+          <option value="siemens">西门子 TIA Portal CSV</option>
+          <option value="mitsubishi">三菱 GX Works CSV</option>
+          <option value="omron">欧姆龙 CX-Programmer CSV</option>
+          <option value="generic">通用CSV</option>
+        </select>
+      </div>
+      <div class="pv-field">
+        <label>导出分隔符</label>
+        <select id="expDelimiter">
+          <option value=",">逗号 (,)</option>
+          <option value=";">分号 (;)</option>
+          <option value="	">Tab</option>
+        </select>
+      </div>
+      <button class="pv-btn pv-btn-primary" onclick="doExport()">生成并预览</button>
+      <button class="pv-btn pv-btn-secondary" onclick="doDownload()">下载CSV</button>
+      <button class="pv-btn pv-btn-secondary" onclick="doCopy()">复制到剪贴板</button>
+    </div>
+    <textarea id="csvOutput" class="pv-input" style="min-height:100px;margin-top:10px" readonly placeholder="转换后的CSV将显示在这里..."></textarea>
+  </div>
+
+</div>
+
+<div class="pv-toast" id="toast"></div>
+
+<script src="../js/common.js"></script>
+<script>
+/* ============================================================
+   PLC Variables Table Format Converter
+   ============================================================ */
+
+// ---- State ----
+let variables = []; // {name,address,dataType,comment}
+const ID = s => document.getElementById(s);
+
+// ---- Toast ----
+function toast(msg) {
+  const t = ID('toast'); t.textContent = msg;
+  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ---- File Drop ----
+const dz = ID('dropzone');
+['dragenter','dragover'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.add('dragover'); }));
+['dragleave','drop'].forEach(e => dz.addEventListener(e, ev => { ev.preventDefault(); dz.classList.remove('dragover'); }));
+dz.addEventListener('drop', e => {
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = ev => { ID('csvInput').value = ev.target.result; toast('文件已加载'); }; r.readAsText(f);
+});
+ID('fileInput').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = ev => { ID('csvInput').value = ev.target.result; toast('文件已加载'); }; r.readAsText(f);
+});
+
+// ---- Type Maps ----
+const typeMap = {
+  siemens:     { BOOL:'BOOL', BIT:'BOOL', BYTE:'BYTE', INT:'INT', DINT:'DINT', REAL:'REAL', FLOAT:'REAL', STRING:'STRING', WORD:'WORD', DWORD:'DWORD' },
+  mitsubishi:  { BOOL:'BIT', BIT:'BIT', BYTE:'BYTE', INT:'INT', DINT:'DINT', REAL:'FLOAT', FLOAT:'FLOAT', STRING:'STRING', WORD:'WORD', DWORD:'DWORD' },
+  omron:       { BOOL:'BOOL', BIT:'BOOL', BYTE:'BYTE', INT:'INT', DINT:'DINT', REAL:'REAL', FLOAT:'REAL', STRING:'STRING', WORD:'WORD', DWORD:'DWORD' },
+  generic:     { BOOL:'BOOL', BIT:'BIT', BYTE:'BYTE', INT:'INT', DINT:'DINT', REAL:'REAL', FLOAT:'FLOAT', STRING:'STRING', WORD:'WORD', DWORD:'DWORD' }
+};
+
+// ---- Address Conversion ----
+function parseSiemensAddr(a) {
+  let m;
+  // I0.0, Q0.0, M0.0, DB1.DBX0.0
+  m = a.match(/^(I|Q|M)(\d+)\.(\d+)$/i);
+  if (m) return { area: m[1].toUpperCase(), byte: +m[2], bit: +m[3] };
+  m = a.match(/^(IW|QW|MW|MD)(\d+)$/i);
+  if (m) return { area: m[1].toUpperCase(), byte: +m[2], bit: -1 };
+  m = a.match(/^DB(\d+)\.DB(X?)(\d+)(?:\.(\d+))?$/i);
+  if (m) return { area: 'DB' + m[1], byte: +m[3], bit: m[4] !== undefined ? +m[4] : -1 };
+  return { raw: a };
+}
+
+function parseMitsubishiAddr(a) {
+  let m;
+  m = /^([XYM])(\d+)$/i.exec(a);
+  if (m) return { area: m[1].toUpperCase(), byte: +m[2], bit: -1 };
+  m = /^([DM])(\d+)$/i.exec(a);
+  if (m) return { area: m[1].toUpperCase(), byte: +m[2], bit: -1 };
+  return { raw: a };
+}
+
+function parseOmronAddr(a) {
+  let m;
+  m = /^CIO(\d+)(?:\.(\d+))?$/i.exec(a);
+  if (m) return { area: 'CIO', byte: +m[1], bit: m[2] !== undefined ? +m[2] : -1 };
+  m = /^([DW])(\d+)$/i.exec(a);
+  if (m) return { area: m[1].toUpperCase(), byte: +m[2], bit: -1 };
+  return { raw: a };
+}
+
+function detectSourceFormat(vars) {
+  for (const v of vars) {
+    const a = v.address.toUpperCase();
+    if (/^(I|Q|M)\d+\.\d+$/.test(a) || /^(IW|QW|MW|MD)\d+$/.test(a) || /^DB\d+/.test(a)) return 'siemens';
+    if (/^[XY]\d+$/.test(a)) return 'mitsubishi';
+    if (/^CIO\d+/.test(a)) return 'omron';
+  }
+  return 'generic';
+}
+
+function convertAddress(addr, from, to) {
+  if (from === to) return addr;
+  const siemensAreas = { I:'输入', Q:'输出', M:'标志' };
+
+  if (from === 'siemens') {
+    const p = parseSiemensAddr(addr);
+    if (p.raw) return addr;
+    if (to === 'mitsubishi') {
+      if (p.area === 'I') return 'X' + (p.bit >= 0 ? p.byte * 8 + p.bit : p.byte);
+      if (p.area === 'Q') return 'Y' + (p.bit >= 0 ? p.byte * 8 + p.bit : p.byte);
+      if (p.area === 'M') return p.bit >= 0 ? 'M' + (p.byte * 8 + p.bit) : 'D' + p.byte;
+      if (p.area.startsWith('DB')) return 'D' + p.byte;
+      return addr;
+    }
+    if (to === 'omron') {
+      if (p.area === 'I') return 'CIO' + p.byte + (p.bit >= 0 ? '.' + String(p.bit).padStart(2,'0') : '');
+      if (p.area === 'Q') return 'CIO' + (p.byte + 100) + (p.bit >= 0 ? '.' + String(p.bit).padStart(2,'0') : '');
+      if (p.area === 'M') return p.bit >= 0 ? 'W' + p.byte + '.' + String(p.bit).padStart(2,'0') : 'D' + p.byte;
+      return 'D' + p.byte;
+    }
+  }
+
+  if (from === 'mitsubishi') {
+    const p = parseMitsubishiAddr(addr);
+    if (p.raw) return addr;
+    if (to === 'siemens') {
+      if (p.area === 'X') return 'I' + p.byte + '.0';
+      if (p.area === 'Y') return 'Q' + p.byte + '.0';
+      if (p.area === 'M') return 'M' + p.byte + '.0';
+      if (p.area === 'D') return 'MD' + p.byte;
+      return addr;
+    }
+    if (to === 'omron') {
+      if (p.area === 'X') return 'CIO' + p.byte + '.00';
+      if (p.area === 'Y') return 'CIO' + (p.byte + 100) + '.00';
+      if (p.area === 'D') return 'D' + p.byte;
+      return 'W' + p.byte;
+    }
+  }
+
+  if (from === 'omron') {
+    const p = parseOmronAddr(addr);
+    if (p.raw) return addr;
+    if (to === 'siemens') {
+      if (p.area === 'CIO') return 'I' + p.byte + (p.bit >= 0 ? '.' + p.bit : '.0');
+      if (p.area === 'D') return 'MD' + p.byte;
+      return 'M' + p.byte + '.0';
+    }
+    if (to === 'mitsubishi') {
+      if (p.area === 'CIO') return 'X' + p.byte;
+      if (p.area === 'D') return 'D' + p.byte;
+      return 'D' + p.byte;
+    }
+  }
+
+  return addr;
+}
+
+// ---- CSV Parse ----
+function parseCSV(text, delim) {
+  const lines = text.trim().split(/\r?\n/);
+  const rows = [];
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const cells = line.split(delim).map(s => s.trim().replace(/^["']|["']$/g, ''));
+    rows.push(cells);
+  }
+  return rows;
+}
+
+function detectColumns(header) {
+  const h = header.map(s => s.toLowerCase());
+  const find = (...keys) => {
+    for (let i = 0; i < h.length; i++) {
+      for (const k of keys) { if (h[i].includes(k)) return i; }
+    }
+    return -1;
+  };
+  return {
+    name:    find('name', 'var', 'symbol', 'tag', '变量', '名称', '变量名'),
+    address: find('address', 'addr', 'device', '地址', 'plc'),
+    type:    find('type', 'data', '数据类型', '类型'),
+    comment: find('comment', 'desc', '注释', '说明', '描述')
+  };
+}
+
+function doParse() {
+  const raw = ID('csvInput').value.trim();
+  if (!raw) { toast('请先输入CSV数据'); return; }
+  const delim = ID('delimiter').value;
+  const hasHdr = ID('hasHeader').value === 'yes';
+  const rows = parseCSV(raw, delim);
+  if (rows.length === 0) { toast('未解析到数据'); return; }
+
+  const srcFmt = ID('srcFormat').value;
+  let cols = { name:0, address:1, type:2, comment:3 };
+  if (hasHdr) { cols = detectColumns(rows[0]); }
+
+  variables = [];
+  const start = hasHdr ? 1 : 0;
+  for (let i = start; i < rows.length; i++) {
+    const r = rows[i];
+    if (r.every(c => !c)) continue;
+    const name = cols.name >= 0 ? (r[cols.name] || '') : (r[0] || '');
+    const address = cols.address >= 0 ? (r[cols.address] || '') : (r[1] || '');
+    let dt = cols.type >= 0 ? (r[cols.type] || '') : (r[2] || '');
+    dt = normalizeType(dt, srcFmt === 'auto' ? detectSourceFormat([{address}]) : srcFmt);
+    const comment = cols.comment >= 0 ? (r[cols.comment] || '') : (r[3] || '');
+    variables.push({ name, address, dataType: dt, comment });
+  }
+
+  renderTable();
+  toast('解析成功: ' + variables.length + ' 个变量');
+}
+
+function normalizeType(dt, fmt) {
+  const upper = dt.toUpperCase().trim();
+  const map = typeMap[fmt] || typeMap.generic;
+  return map[upper] || upper || 'INT';
+}
+
+// ---- Render ----
+function renderTable() {
+  const tbody = ID('varBody');
+  tbody.innerHTML = '';
+  variables.forEach((v, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:var(--text-dim,#888)">${i + 1}</td>
+      <td><input value="${esc(v.name)}" onchange="variables[${i}].name=this.value"></td>
+      <td><input value="${esc(v.address)}" onchange="variables[${i}].address=this.value"></td>
+      <td><input value="${esc(v.dataType)}" onchange="variables[${i}].dataType=this.value"></td>
+      <td><input value="${esc(v.comment)}" onchange="variables[${i}].comment=this.value"></td>
+      <td><span class="del-row" onclick="variables.splice(${i},1);renderTable()">✕</span></td>`;
+    tbody.appendChild(tr);
+  });
+  ID('countBadge').textContent = variables.length;
+  ['tableSection','batchSection','statsSection','exportSection'].forEach(id => ID(id).style.display = variables.length ? '' : 'none');
+  renderStats();
+}
+
+function esc(s) { return String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+
+function addRow() {
+  variables.push({ name: '', address: '', dataType: 'INT', comment: '' });
+  renderTable();
+}
+
+function clearAll() {
+  if (!confirm('确认清空所有变量？')) return;
+  variables = [];
+  renderTable();
+}
+
+// ---- Batch ----
+function batchPrefix() {
+  const p = ID('prefixVal').value; if (!p) return;
+  variables.forEach(v => v.name = p + v.name);
+  renderTable(); toast('已添加前缀: ' + p);
+}
+function batchSuffix() {
+  const s = ID('suffixVal').value; if (!s) return;
+  variables.forEach(v => v.name = v.name + s);
+  renderTable(); toast('已添加后缀: ' + s);
+}
+function batchOffset() {
+  const off = parseInt(ID('offsetVal').value) || 0;
+  if (!off) return;
+  variables.forEach(v => {
+    const m = v.address.match(/^([A-Za-z]+\.?)(\d+)(.*)$/);
+    if (m) v.address = m[1] + (parseInt(m[2]) + off) + m[3];
+  });
+  renderTable(); toast('地址偏移: ' + (off > 0 ? '+' : '') + off);
+}
+function batchReplaceType() {
+  const from = ID('replaceFrom').value;
+  const to = ID('replaceTo').value;
+  if (!from || !to) { toast('请选择替换类型'); return; }
+  let cnt = 0;
+  variables.forEach(v => { if (v.dataType.toUpperCase() === from) { v.dataType = to; cnt++; } });
+  renderTable(); toast('已替换 ' + cnt + ' 个变量类型');
+}
+
+// ---- Stats ----
+function renderStats() {
+  const grid = ID('statsGrid');
+  if (!variables.length) { grid.innerHTML = ''; return; }
+
+  const typeCount = {}, areaCount = {};
+  variables.forEach(v => {
+    typeCount[v.dataType] = (typeCount[v.dataType] || 0) + 1;
+    const area = v.address.replace(/[0-9.]+$/, '').replace(/\d+$/, '') || 'OTHER';
+    areaCount[area] = (areaCount[area] || 0) + 1;
+  });
+
+  let html = `<div class="pv-stat-card"><div class="num">${variables.length}</div><div class="lbl">总变量数</div></div>`;
+  for (const [t, c] of Object.entries(typeCount).sort((a, b) => b[1] - a[1])) {
+    html += `<div class="pv-stat-card"><div class="num">${c}</div><div class="lbl">${t}</div></div>`;
+  }
+  for (const [a, c] of Object.entries(areaCount).sort((a, b) => b[1] - a[1])) {
+    html += `<div class="pv-stat-card"><div class="num">${c}</div><div class="lbl">${a}</div></div>`;
+  }
+  grid.innerHTML = html;
+}
+
+// ---- Export ----
+function doExport() {
+  if (!variables.length) { toast('无数据可导出'); return; }
+  const fmt = ID('dstFormat').value;
+  const delim = ID('expDelimiter').value;
+  const srcFmt = ID('srcFormat').value === 'auto' ? detectSourceFormat(variables) : ID('srcFormat').value;
+
+  let header, rows;
+  if (fmt === 'siemens') {
+    header = ['Name', 'Address', 'Data Type', 'Comment'];
+    rows = variables.map(v => [v.name, convertAddress(v.address, srcFmt, 'siemens'), typeMap.siemens[v.dataType.toUpperCase()] || v.dataType, v.comment]);
+  } else if (fmt === 'mitsubishi') {
+    header = ['Device Name', 'Device', 'Data Type', 'Comment'];
+    rows = variables.map(v => [v.name, convertAddress(v.address, srcFmt, 'mitsubishi'), typeMap.mitsubishi[v.dataType.toUpperCase()] || v.dataType, v.comment]);
+  } else if (fmt === 'omron') {
+    header = ['Symbol', 'Address', 'Data Type', 'Comment'];
+    rows = variables.map(v => [v.name, convertAddress(v.address, srcFmt, 'omron'), typeMap.omron[v.dataType.toUpperCase()] || v.dataType, v.comment]);
+  } else {
+    header = ['Name', 'Address', 'Data Type', 'Comment'];
+    rows = variables.map(v => [v.name, v.address, v.dataType, v.comment]);
+  }
+
+  const out = [header.join(delim), ...rows.map(r => r.map(c => {
+    const s = String(c || '');
+    return s.includes(delim) || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(delim))].join('\n');
+
+  ID('csvOutput').value = out;
+  toast('已生成 ' + variables.length + ' 条记录');
+}
+
+function doCopy() {
+  const out = ID('csvOutput').value;
+  if (!out) { doExport(); }
+  navigator.clipboard.writeText(ID('csvOutput').value).then(() => toast('已复制到剪贴板'));
+}
+
+function doDownload() {
+  const out = ID('csvOutput').value;
+  if (!out) { doExport(); }
+  const content = ID('csvOutput').value;
+  const fmt = ID('dstFormat').value;
+  const names = { siemens: 'TIA_Portal_Variables', mitsubishi: 'GX_Works_Variables', omron: 'CX_Programmer_Variables', generic: 'Variables' };
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (names[fmt] || 'Variables') + '.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('文件已下载');
+}
+
+// ---- Sample Data ----
+function loadSample() {
+  ID('srcFormat').value = 'siemens';
+  ID('csvInput').value = `Name,Address,Data Type,Comment
+Start_Button,I0.0,BOOL,启动按钮
+Stop_Button,I0.1,BOOL,停止按钮
+Emergency_Stop,I0.2,BOOL,急停
+Motor_Forward,Q0.0,BOOL,电机正转
+Motor_Reverse,Q0.1,BOOL,电机反转
+Speed_Setpoint,MW0,INT,速度设定值
+Speed_Actual,MD4,REAL,实际速度
+Temperature,MD8,REAL,温度值
+Pressure,MD12,REAL,压力值
+Alarm_Word,MW16,WORD,报警字
+Counter,DB1.DBX0.0,BOOL,计数器位
+Total_Count,DB1.DBD4,DINT,总计数`;
+  toast('已加载西门子示例数据');
+}
+</script>
+</body>
+</html>
