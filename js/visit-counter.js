@@ -1,6 +1,7 @@
 /**
  * 使用次数统计模块
  * 显示本工具使用次数 + 全站总访问量
+ * 支持响应式布局
  */
 const VisitCounter = (() => {
   const API_BASE = 'https://plc.14616679.xyz/api';
@@ -60,27 +61,73 @@ const VisitCounter = (() => {
     // 查找或创建统计容器
     let container = document.getElementById('visitStats');
     if (!container) {
-      // 在页面顶部创建
       container = document.createElement('div');
       container.id = 'visitStats';
-      container.style.cssText = 'display:flex;justify-content:flex-end;gap:16px;padding:8px 20px;font-size:12px;color:var(--text-dim);opacity:0.7;';
 
-      // 插入到 container 开头
-      const mainContainer = document.querySelector('.container');
-      if (mainContainer) {
-        mainContainer.insertBefore(container, mainContainer.firstChild);
+      // 插入到 tool-header 后面
+      const toolHeader = document.querySelector('.tool-header');
+      if (toolHeader) {
+        toolHeader.parentNode.insertBefore(container, toolHeader.nextSibling);
+      } else {
+        // fallback: 插入到 container 开头
+        const mainContainer = document.querySelector('.container');
+        if (mainContainer) {
+          mainContainer.insertBefore(container, mainContainer.firstChild);
+        }
       }
     }
 
     container.innerHTML = `
-      <span style="display:flex;align-items:center;gap:4px;">
-        <span style="font-size:14px;">👁️</span>
-        <span>本工具 <strong style="color:var(--primary);">${formatNumber(toolCount)}</strong> 次</span>
-      </span>
-      <span style="display:flex;align-items:center;gap:4px;">
-        <span style="font-size:14px;">🌐</span>
-        <span>全站 <strong style="color:var(--primary);">${formatNumber(totalCount)}</strong> 次</span>
-      </span>
+      <style>
+        #visitStats {
+          display: flex;
+          justify-content: flex-start;
+          gap: 20px;
+          padding: 12px 0;
+          margin-bottom: 16px;
+          font-size: 13px;
+          color: var(--text-dim);
+          border-bottom: 1px solid var(--border);
+        }
+        #visitStats .stat-item {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+        #visitStats .stat-icon {
+          font-size: 16px;
+        }
+        #visitStats .stat-value {
+          color: var(--primary);
+          font-weight: 600;
+          font-family: var(--mono);
+        }
+        /* 手机版：改为纵向排列，更紧凑 */
+        @media (max-width: 600px) {
+          #visitStats {
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px 12px;
+            margin: 0 -24px 16px -24px;
+            padding: 10px 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 12px;
+          }
+          #visitStats .stat-item {
+            justify-content: center;
+          }
+        }
+      </style>
+      <div class="stat-item">
+        <span class="stat-icon">👁️</span>
+        <span>本工具 <span class="stat-value">${formatNumber(toolCount)}</span> 次</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">🌐</span>
+        <span>全站 <span class="stat-value">${formatNumber(totalCount)}</span> 次</span>
+      </div>
     `;
   }
 
