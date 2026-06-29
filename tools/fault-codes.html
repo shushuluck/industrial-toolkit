@@ -27,6 +27,7 @@
           <button class="btn btn-primary btn-sm" onclick="showAddForm()">+ 添加数据</button>
           <button class="btn btn-outline btn-sm" onclick="exportUserData()">📥 导出JSON</button>
           <button class="btn btn-outline btn-sm" onclick="importUserData()">📤 导入JSON</button>
+          <button class="btn btn-outline btn-sm" style="background:#8e44ad;color:#fff;border-color:#8e44ad;" onclick="viewOnlineSubmissions()">🌐 在线提交</button>
         </div>
         <div id="userEntries"></div>
         <div id="addForm" style="display:none;"></div>
@@ -278,7 +279,38 @@
     function toggleUserPanel(){let p=document.getElementById('userPanel');let a=document.getElementById('userPanelArrow');if(p.style.display==='none'){p.style.display='block';a.textContent='▲';renderUserEntries()}else{p.style.display='none';a.textContent='▼'}}
     function renderUserEntries(){let data=getUserData();let html='';data.forEach((d,i)=>{html+='<div class="card" style="border-left:3px solid var(--primary);padding:10px;margin-bottom:8px;"><div style="display:flex;justify-content:space-between;align-items:center;"><div><span class="badge badge-primary">'+d.brand+'</span> <strong>'+d.code+'</strong> — '+d.name+' <span class="badge badge-accent" style="font-size:10px;">用户补充</span></div><button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);font-size:11px;" onclick="deleteUserEntryAndRefresh('+i+')">删除</button></div></div>'});document.getElementById('userEntries').innerHTML=html||'<div style="color:var(--text-dim);font-size:13px;">暂无补充数据</div>'}
     function deleteUserEntryAndRefresh(idx){if(!confirm('确认删除这条补充数据？'))return;deleteUserEntry(idx);renderUserEntries();document.getElementById('userCount').textContent='('+getUserData().length+'条)';filterFaults()}
-    function showAddForm(){let f=document.getElementById('addForm');if(f.style.display==='block'){f.style.display='none';return}f.style.display='block';f.innerHTML='<div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div><label style="font-size:12px;color:var(--text-dim);">品牌</label><select id="uf_brand" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"><option value="通用变频器">通用变频器</option><option value="西门子 S7">西门子 S7</option><option value="西门子 V20">西门子 V20</option><option value="西门子 G120">西门子 G120</option><option value="ABB ACS580">ABB ACS580</option><option value="三菱 FR-D700/E700">三菱 FR-D700/E700</option><option value="汇川 MD500">汇川 MD500</option><option value="台达 VFD-M/EL">台达 VFD-M/EL</option><option value="其他">其他</option></select></div><div><label style="font-size:12px;color:var(--text-dim);">故障代码</label><input id="uf_code" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 E001"></div><div><label style="font-size:12px;color:var(--text-dim);">故障名称</label><input id="uf_name" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 过电流"></div><div><label style="font-size:12px;color:var(--text-dim);">严重程度</label><select id="uf_level" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"><option value="严重">严重</option><option value="警告">警告</option><option value="信息">信息</option></select></div></div><div style="margin-top:10px;"><label style="font-size:12px;color:var(--text-dim);">可能原因（每行一条）</label><textarea id="uf_cause" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></textarea></div><div style="margin-top:10px;"><label style="font-size:12px;color:var(--text-dim);">处理方法（每行一条）</label><textarea id="uf_fix" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></textarea></div><div style="margin-top:12px;display:flex;gap:8px;"><button class="btn btn-primary btn-sm" onclick="submitFaultEntry()">提交</button><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'addForm\').style.display=\'none\'">取消</button></div></div>'}
+    const CF_API = 'https://plc.14616679.xyz/api';
+    async function submitToServer(){
+      let brand=document.getElementById('uf_brand').value;
+      let code=document.getElementById('uf_code').value.trim();
+      let name=document.getElementById('uf_name').value.trim();
+      let level=document.getElementById('uf_level').value;
+      let cause=document.getElementById('uf_cause').value.trim();
+      let fix=document.getElementById('uf_fix').value.trim();
+      if(!code||!name){showToast('请填写故障代码和名称','error');return}
+      try{
+        let resp=await fetch(CF_API+'/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'fault_codes',brand,code,name,level,cause,fix})});
+        let r=await resp.json();
+        if(r.success){showToast('✅ 已提交，审核后显示','success');document.getElementById('addForm').style.display='none'}
+        else{showToast('提交失败：'+(r.error||'未知'),'error')}
+      }catch(e){showToast('网络错误：'+e.message,'error')}
+    }
+    async function viewOnlineSubmissions(){
+      try{
+        let resp=await fetch(CF_API+'/submissions');
+        let data=await resp.json();
+        if(data.success){
+          let items=data.items.filter(i=>i.type==='fault_codes');
+          if(items.length===0){showToast('暂无在线提交','info');return}
+          let html=items.map(i=>`<div class="card" style="border-left:3px solid #8e44ad;"><span class="badge badge-accent">在线提交</span> <strong>${i.brand||''}</strong> ${i.code||''} — ${i.name||''} <span style="font-size:11px;color:var(--text-dim);">${i.created_at||''}</span></div>`).join('');
+          document.getElementById('userEntries').innerHTML=html;
+          document.getElementById('userPanel').style.display='block';
+          document.getElementById('userPanelArrow').textContent='▲';
+          showToast('显示 '+items.length+' 条在线提交','success')
+        }
+      }catch(e){showToast('查询失败：'+e.message,'error')}
+    }
+    function showAddForm(){let f=document.getElementById('addForm');if(f.style.display==='block'){f.style.display='none';return}f.style.display='block';f.innerHTML='<div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;"><div><label style="font-size:12px;color:var(--text-dim);">品牌</label><select id="uf_brand" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"><option value="通用变频器">通用变频器</option><option value="西门子 S7">西门子 S7</option><option value="西门子 V20">西门子 V20</option><option value="西门子 G120">西门子 G120</option><option value="ABB ACS580">ABB ACS580</option><option value="三菱 FR-D700/E700">三菱 FR-D700/E700</option><option value="汇川 MD500">汇川 MD500</option><option value="台达 VFD-M/EL">台达 VFD-M/EL</option><option value="其他">其他</option></select></div><div><label style="font-size:12px;color:var(--text-dim);">故障代码</label><input id="uf_code" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 E001"></div><div><label style="font-size:12px;color:var(--text-dim);">故障名称</label><input id="uf_name" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);" placeholder="如 过电流"></div><div><label style="font-size:12px;color:var(--text-dim);">严重程度</label><select id="uf_level" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"><option value="严重">严重</option><option value="警告">警告</option><option value="信息">信息</option></select></div></div><div style="margin-top:10px;"><label style="font-size:12px;color:var(--text-dim);">可能原因（每行一条）</label><textarea id="uf_cause" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></textarea></div><div style="margin-top:10px;"><label style="font-size:12px;color:var(--text-dim);">处理方法（每行一条）</label><textarea id="uf_fix" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);"></textarea></div><div style="display:flex;gap:8px;margin-top:12px;"><button class="btn btn-primary" onclick="submitFaultEntry()">💾 保存本地</button><button class="btn" style="background:#8e44ad;color:#fff;" onclick="submitToServer()">🌐 提交到服务器</button></div></div>'}
     function submitFaultEntry(){let brand=document.getElementById('uf_brand').value;let code=document.getElementById('uf_code').value.trim();let name=document.getElementById('uf_name').value.trim();let level=document.getElementById('uf_level').value;let cause=document.getElementById('uf_cause').value.trim().split('\n').filter(s=>s.trim());let fix=document.getElementById('uf_fix').value.trim().split('\n').filter(s=>s.trim());if(!code||!name){showToast('请填写故障代码和名称','error');return}addUserEntry({brand,code,name,level,cause,fix});document.getElementById('addForm').style.display='none';showToast('添加成功','success');renderUserEntries();document.getElementById('userCount').textContent='('+getUserData().length+'条)';filterFaults()}
     let activeBrand='';
     function renderBrands(){
