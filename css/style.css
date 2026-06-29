@@ -255,10 +255,102 @@ tr:hover td { background: rgba(0,212,255,0.03); }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
+/* ===== BACK TO TOP ===== */
+.back-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #000;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0,212,255,0.3);
+}
+.back-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.back-to-top:hover {
+  background: var(--primary-dim);
+  transform: translateY(-2px);
+}
+
+/* ===== MOBILE OPTIMIZATION ===== */
 @media (max-width: 768px) {
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   .header { flex-direction: column; gap: 12px; }
-  .container { padding: 16px; }
+  .container { padding: 12px; }
+
+  /* 工具卡片单列 */
+  .tool-grid { grid-template-columns: 1fr; gap: 12px; }
+  .tool-card { padding: 16px; }
+  .tool-card .icon { font-size: 24px; margin-bottom: 6px; }
+  .tool-card h3 { font-size: 15px; }
+
+  /* 搜索框加大 */
+  .search-box input { font-size: 16px; padding: 12px 12px 12px 36px; }
+
+  /* 标签换行 */
+  .tag { font-size: 11px; padding: 2px 8px; }
+
+  /* 表格横向滚动 */
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+
+  /* 代码块缩小字号 */
+  .snippet { font-size: 11px; padding: 10px; line-height: 1.6; }
+
+  /* 卡片内边距缩小 */
+  .card { padding: 14px; }
+
+  /* 输入框全宽 */
+  input[type="text"], input[type="number"], select { width: 100%; font-size: 16px; }
+  textarea { font-size: 16px; }
+
+  /* 结果框 */
+  .result-box { font-size: 13px; padding: 10px 14px; }
+
+  /* 按钮加大触控区域 */
+  .btn { padding: 10px 16px; min-height: 44px; }
+  .btn-sm { padding: 8px 14px; min-height: 36px; }
+
+  /* 标签栏换行 */
+  #tagBar, #catBar, #brandBar { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  /* 文档项 */
+  .doc-item { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .doc-item .btn { align-self: flex-end; }
+
+  /* 符号网格 */
+  .symbol-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .symbol-card { padding: 10px; }
+  .symbol-card svg { width: 60px; height: 60px; }
+
+  /* 返回顶部按钮移动端 */
+  .back-to-top { bottom: 16px; right: 16px; width: 40px; height: 40px; font-size: 18px; }
+
+  /* 输入组垂直排列 */
+  .input-group { flex-direction: column; align-items: stretch; }
+  .input-group label { min-width: auto; margin-bottom: 4px; }
+}
+
+@media (max-width: 480px) {
+  .tool-grid { gap: 10px; }
+  .tool-card { padding: 14px; }
+  .tool-card h3 { font-size: 14px; }
+  .tool-card p { font-size: 12px; }
+  .snippet { font-size: 10px; padding: 8px; }
+  .symbol-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 }
 
 /* ===== BADGE ===== */

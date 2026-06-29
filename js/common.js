@@ -70,3 +70,26 @@ function renderFooter() {
     </div>
   `;
 }
+
+// Back to top button - auto-init on all pages
+(function() {
+  // Create button
+  var btn = document.createElement('button');
+  btn.className = 'back-to-top';
+  btn.innerHTML = '↑';
+  btn.title = '返回顶部';
+  btn.onclick = function() { window.scrollTo({top:0,behavior:'smooth'}); };
+  document.body.appendChild(btn);
+
+  // Show/hide on scroll
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      window.requestAnimationFrame(function() {
+        btn.classList.toggle('visible', window.scrollY > 300);
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+})();
