@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLC 指令大全 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .inst-card{cursor:pointer;transition:all .2s}
+    .inst-card:hover{border-color:var(--primary-dim)}
+    .inst-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .inst-head .inst-name{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--primary)}
+    .inst-head .inst-desc{color:var(--text-dim);font-size:13px;margin-left:4px}
+    .inst-body{overflow:hidden;max-height:0;transition:max-height .35s ease,padding .35s ease;padding:0 20px 0 20px}
+    .inst-card.open .inst-body{max-height:2000px;padding:12px 0 4px 0}
+    .inst-arrow{transition:transform .3s;color:var(--text-muted);font-size:12px}
+    .inst-card.open .inst-arrow{transform:rotate(90deg)}
+    .param-table{margin:8px 0;font-size:13px}
+    .param-table th{font-size:11px}
+    .pitfall-box{border-left:3px solid var(--danger);padding:8px 12px;margin:4px 0;background:rgba(255,82,82,0.08);border-radius:0 4px 4px 0;font-size:13px;color:var(--danger)}
+    .filter-bar{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+    .filter-bar .tag.active{background:var(--primary);color:#000}
+    .section-label{font-size:12px;color:var(--text-muted);margin-top:18px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+    .inst-syn{font-family:var(--mono);font-size:13px;color:var(--accent);margin:4px 0}
+    .inst-code-label{font-size:12px;color:var(--text-dim);margin-top:10px;margin-bottom:4px}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>📖 PLC 指令大全</h2><p>常用PLC指令的含义、用法、代码示例和常见坑，按品牌和分类筛选</p></div>
+    <div class="card">
+      <div class="search-box"><input type="text" id="search" placeholder="搜索指令名称、描述、语法、标签..." oninput="filterAll()"></div>
+      <div class="section-label">品牌筛选</div>
+      <div class="filter-bar" id="brandBar"></div>
+      <div class="section-label">分类筛选</div>
+      <div class="filter-bar" id="catBar"></div>
+    </div>
+    <div id="instList"></div>
+  </div>
+  <div class="footer">工控工具箱 — PLC 指令大全</div>
+  <script src="../js/common.js"></script>
+  <script>
+const instructions=[
+// ========== 位逻辑 ==========
+{name:'LD',brand:'通用IEC',category:'位逻辑',syntax:'LD operand',desc:'装载常开触点，将操作数状态压入运算栈',params:[{name:'operand',type:'BOOL',desc:'位地址，如 I0.0、M0.0'}],example:`LD I0.0    // 装载I0.0常开触点\nLD I0.1    // 串联装载\nOUT Q0.0`,pitfalls:['LD只在一个梯级的开始使用，中间用AND/OR','不同品牌助记符不同：西门子用A/AN，三菱用LD/LDI'],tags:['基础','位逻辑']},
+{name:'LDI',brand:'三菱',category:'位逻辑',syntax:'LDI operand',desc:'装载常闭触点（取反后装载）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`LDI X001    // X001常闭触点\nOUT Y000`,pitfalls:['LDI等价于IEC的LD NOT','注意常开/常闭在安全回路中的逻辑差异'],tags:['基础','位逻辑','三菱']},
+{name:'AND',brand:'通用IEC',category:'位逻辑',syntax:'AND operand',desc:'串联常开触点（逻辑与）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`LD I0.0\nAND I0.1   // I0.0 AND I0.1\nOUT Q0.0`,pitfalls:['AND指令修改的是栈顶值，不是直接修改操作数','三菱用AND/ANI，西门子用A/AN'],tags:['基础','位逻辑']},
+{name:'ANI',brand:'三菱',category:'位逻辑',syntax:'ANI operand',desc:'串联常闭触点（逻辑与非）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`LD X000\nANI X001   // X000 AND NOT X001\nOUT Y000`,pitfalls:['ANI = AND NOT，注意取反逻辑','用于互锁时注意扫描顺序对结果的影响'],tags:['位逻辑','三菱']},
+{name:'OR',brand:'通用IEC',category:'位逻辑',syntax:'OR operand',desc:'并联常开触点（逻辑或）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`LD I0.0\nOR I0.1    // I0.0 OR I0.1\nOUT Q0.0`,pitfalls:['OR只影响栈顶运算，不影响前级','三菱用OR/ORI，西门子用O/ON'],tags:['基础','位逻辑']},
+{name:'ORI',brand:'三菱',category:'位逻辑',syntax:'ORI operand',desc:'并联常闭触点（逻辑或非）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`LD X000\nORI X001   // X000 OR NOT X001\nOUT Y000`,pitfalls:['ORI = OR NOT','并联支路多时注意扫描周期延长'],tags:['位逻辑','三菱']},
+{name:'OUT',brand:'通用IEC',category:'位逻辑',syntax:'OUT operand',desc:'线圈输出，将运算栈结果写入位地址',params:[{name:'operand',type:'BOOL',desc:'输出位地址，如 Q0.0、M0.0'}],example:`LD I0.0\nAND I0.1\nOUT Q0.0   // Q0.0 = I0.0 AND I0.1`,pitfalls:['同一地址多次OUT，最后一次为准（覆盖）','OUT不能直接驱动I区（输入区只读）','三菱中OUT不能驱动特殊继电器M8xxx（部分型号）'],tags:['基础','位逻辑']},
+{name:'SET',brand:'通用IEC',category:'位逻辑',syntax:'SET operand',desc:'置位指令，条件满足时将位置1并保持',params:[{name:'operand',type:'BOOL',desc:'要置位的地址'}],example:`LD I0.0\nSET Q0.0   // I0.0为ON时，Q0.0置1并保持`,pitfalls:['多个SET/RST对同一地址，最后执行的优先（扫描周期内）','SET的输出在下一个扫描周期才生效','SET与OUT不同：SET保持，OUT随条件消失而消失'],tags:['基础','位逻辑','置位/复位']},
+{name:'RST',brand:'通用IEC',category:'位逻辑',syntax:'RST operand',desc:'复位指令，条件满足时将位置0',params:[{name:'operand',type:'BOOL',desc:'要复位的地址'}],example:`LD I0.1\nRST Q0.0   // I0.1为ON时，Q0.0清零`,pitfalls:['RST优先级高于SET（同时触发时RST胜出，因后执行）','复位计数器时CV清零，复位定时器时ET清零','SET和RST配对使用时，谁在程序后面谁优先'],tags:['基础','位逻辑','置位/复位']},
+{name:'PLS',brand:'三菱',category:'位逻辑',syntax:'PLS operand',desc:'上升沿脉冲输出，检测到上升沿时输出一个扫描周期',params:[{name:'operand',type:'BOOL',desc:'辅助继电器地址'}],example:`LD X000\nPLS M10    // X000上升沿时M10输出一个脉冲`,pitfalls:['PLS输出只持续一个扫描周期，不能用作持续信号','PLS/PLF的辅助继电器不能用于其他地方','西门子等价用P_EDGE函数块'],tags:['边沿','三菱']},
+{name:'PLF',brand:'三菱',category:'位逻辑',syntax:'PLF operand',desc:'下降沿脉冲输出',params:[{name:'operand',type:'BOOL',desc:'辅助继电器地址'}],example:`LD X000\nPLF M11    // X000下降沿时M11输出一个脉冲`,pitfalls:['PLF与PLS的区别：PLS上升沿、PLF下降沿','脉冲宽度=1个扫描周期，用作触发信号'],tags:['边沿','三菱']},
+{name:'A',brand:'西门子',category:'位逻辑',syntax:'A operand',desc:'串联常开触点（AND，西门子助记符）',params:[{name:'operand',type:'BOOL',desc:'位地址，如 I0.0、M0.0、DB1.DBX0.0'}],example:`A   I0.0\nA   I0.1\n=   Q0.0    // Q0.0 = I0.0 AND I0.1`,pitfalls:['西门子STL语法，SCL中直接用AND运算符','A指令可访问DB中的位，需用DBx.DBXn.m格式','S7-1500推荐用SCL替代STL'],tags:['位逻辑','西门子']},
+{name:'AN',brand:'西门子',category:'位逻辑',syntax:'AN operand',desc:'串联常闭触点（AND NOT，西门子助记符）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`A   I0.0\nAN  I0.1\n=   Q0.0    // Q0.0 = I0.0 AND NOT I0.1`,pitfalls:['AN = AND NOT','注意I区地址的物理接线必须与程序逻辑匹配'],tags:['位逻辑','西门子']},
+{name:'O',brand:'西门子',category:'位逻辑',syntax:'O operand',desc:'并联常开触点（OR，西门子助记符）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`A   I0.0\nO   I0.1\n=   Q0.0    // Q0.0 = I0.0 OR I0.1`,pitfalls:['注意运算优先级：AND优先于OR','SCL中直接用OR运算符更直观'],tags:['位逻辑','西门子']},
+{name:'ON',brand:'西门子',category:'位逻辑',syntax:'ON operand',desc:'并联常闭触点（OR NOT，西门子助记符）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`A   I0.0\nON  I0.1\n=   Q0.0    // Q0.0 = I0.0 OR NOT I0.1`,pitfalls:['ON = OR NOT','用于手动/自动切换时常见'],tags:['位逻辑','西门子']},
+
+// ========== 定时器 ==========
+{name:'TON',brand:'通用IEC',category:'定时器',syntax:'TON(IN, PT, Q, ET)',desc:'延时接通定时器，IN为TRUE持续PT时间后Q输出TRUE',params:[{name:'IN',type:'BOOL',desc:'使能输入'},{name:'PT',type:'TIME',desc:'预设时间，如T#5S'},{name:'Q',type:'BOOL',desc:'到时输出'},{name:'ET',type:'TIME',desc:'已计时时间'}],example:`VAR\n  T1: TON;\nEND_VAR\n\nT1(IN:=StartBtn, PT:=T#5S);\nMotorRun := T1.Q;  // 按钮按下5秒后启动`,pitfalls:['IN信号必须保持TRUE才能计时，中途断开则重新计时','PT=0时Q立即输出TRUE，不要用PT=0做特殊判断','西门子S7-1200中TON需实例化在DB中，多个TON共享背景DB注意实例名','扫描周期>PT时，定时器可能不准确'],tags:['定时器','基础','IEC']},
+{name:'TOF',brand:'通用IEC',category:'定时器',syntax:'TOF(IN, PT, Q, ET)',desc:'延时断开定时器，IN从TRUE变FALSE后Q保持PT时间才断开',params:[{name:'IN',type:'BOOL',desc:'使能输入'},{name:'PT',type:'TIME',desc:'延时断开时间'},{name:'Q',type:'BOOL',desc:'输出'},{name:'ET',type:'TIME',desc:'已计时时间'}],example:`VAR\n  T2: TOF;\nEND_VAR\n\nT2(IN:=Sensor, PT:=T#3S);\nLight := T2.Q;  // 传感器断开后灯延时3秒熄灭`,pitfalls:['TOF在IN变FALSE后才开始计时','IN重新变TRUE时ET立即清零、Q立即变TRUE','常用于设备停机后的延时冷却/润滑'],tags:['定时器','IEC']},
+{name:'TP',brand:'通用IEC',category:'定时器',syntax:'TP(IN, PT, Q, ET)',desc:'脉冲定时器，IN上升沿触发后Q输出PT时间的固定脉冲',params:[{name:'IN',type:'BOOL',desc:'触发输入'},{name:'PT',type:'TIME',desc:'脉冲宽度'},{name:'Q',type:'BOOL',desc:'脉冲输出'},{name:'ET',type:'TIME',desc:'已计时时间'}],example:`VAR\n  T3: TP;\nEND_VAR\n\nT3(IN:=Alarm, PT:=T#2S);\nBuzzer := T3.Q;  // 报警触发后蜂鸣2秒`,pitfalls:['TP输出固定宽度脉冲，即使IN已变FALSE也不会中断','触发期间重复触发无效（必须等脉冲结束）','西门子S7-300/400不支持TP，需用TON模拟'],tags:['定时器','IEC']},
+{name:'TONR',brand:'通用IEC',category:'定时器',syntax:'TONR(IN, PT, R, Q, ET)',desc:'掉电保持型延时接通定时器，断电后ET值保持',params:[{name:'IN',type:'BOOL',desc:'使能输入'},{name:'PT',type:'TIME',desc:'预设时间'},{name:'R',type:'BOOL',desc:'复位输入'},{name:'Q',type:'BOOL',desc:'到时输出'},{name:'ET',type:'TIME',desc:'已计时时间'}],example:`VAR\n  T4: TONR;\nEND_VAR\n\nT4(IN:=Run, PT:=T#1H, R:=Reset);\nMaintAlarm := T4.Q;  // 累计运行1小时后维护提醒`,pitfalls:['TONR断电后ET保持，重新上电继续计时','必须显式复位R才能清零ET','不复位的话，ET永远在累计，Q一直为TRUE'],tags:['定时器','掉电保持']},
+{name:'TMR',brand:'三菱',category:'定时器',syntax:'TMR Tn PT',desc:'三菱通用定时器（100ms基时），PT为设定值',params:[{name:'Tn',type:'TIMER',desc:'定时器编号，如T0'},{name:'PT',type:'INT',desc:'设定值（100ms为单位，K100=10秒）'}],example:`LD X000\nTMR T0 K50    // 延时5秒(50×100ms)\nLD T0\nOUT Y000`,pitfalls:['三菱TMR分辨率100ms，不适用于短延时','K值范围：1~32767','TMR为掉电不保持型，断电后计时清零','三菱FX系列定时器编号决定基时：T0-T199为100ms，T200-T245为10ms'],tags:['定时器','三菱']},
+
+// ========== 计数器 ==========
+{name:'CTU',brand:'通用IEC',category:'计数器',syntax:'CTU(CU, R, PV, Q, CV)',desc:'加计数器，CU每收到一个上升沿CV加1',params:[{name:'CU',type:'BOOL',desc:'计数脉冲输入'},{name:'R',type:'BOOL',desc:'复位输入'},{name:'PV',type:'INT',desc:'预设值'},{name:'Q',type:'BOOL',desc:'CV>=PV时为TRUE'},{name:'CV',type:'INT',desc:'当前计数值'}],example:`VAR\n  C1: CTU;\nEND_VAR\n\nC1(CU:=Sensor, R:=Reset, PV:=10);\nDone := C1.Q;  // 计数到10个产品后输出`,pitfalls:['CU必须是脉冲信号（上升沿触发），持续TRUE只计一次','R复位优先，R为TRUE时CV立即清零','CV超过INT最大值(32767)会溢出，需注意防护'],tags:['计数器','基础','IEC']},
+{name:'CTD',brand:'通用IEC',category:'计数器',syntax:'CTD(CD, LD, PV, Q, CV)',desc:'减计数器，CD每收到一个上升沿CV减1',params:[{name:'CD',type:'BOOL',desc:'计数脉冲输入'},{name:'LD',type:'BOOL',desc:'装载输入（CV=PV）'},{name:'PV',type:'INT',desc:'预设值'},{name:'Q',type:'BOOL',desc:'CV<=0时为TRUE'},{name:'CV',type:'INT',desc:'当前计数值'}],example:`VAR\n  C2: CTD;\nEND_VAR\n\nC2(CD:=Use, LD:=Refill, PV:=100);\nEmpty := C2.Q;  // 使用100次后提示耗材用完`,pitfalls:['LD为TRUE时CV被重置为PV值','CV减到0后继续减会变为负数，Q保持TRUE','常用于物料剩余计数'],tags:['计数器','IEC']},
+{name:'CTUD',brand:'通用IEC',category:'计数器',syntax:'CTUD(CU, CD, R, LD, PV, QU, QD, CV)',desc:'加减计数器，同时支持加计数和减计数',params:[{name:'CU',type:'BOOL',desc:'加计数输入'},{name:'CD',type:'BOOL',desc:'减计数输入'},{name:'R',type:'BOOL',desc:'复位'},{name:'LD',type:'BOOL',desc:'装载'},{name:'PV',type:'INT',desc:'预设值'},{name:'QU',type:'BOOL',desc:'CV>=PV时为TRUE'},{name:'QD',type:'BOOL',desc:'CV<=0时为TRUE'},{name:'CV',type:'INT',desc:'当前计数值'}],example:`VAR\n  C3: CTUD;\nEND_VAR\n\nC3(CU:=Entry, CD:=Exit, R:=Reset, LD:=FALSE, PV:=50);\nFull := C3.QU;   // 车满50辆\nEmpty := C3.QD;  // 车位为空`,pitfalls:['CU和CD同时触发时，先加后减','注意QU和QD的阈值方向不同','停车场/仓库进出计数的经典用法'],tags:['计数器','IEC']},
+{name:'CNT',brand:'三菱',category:'计数器',syntax:'CNT Cn Knn',desc:'三菱减计数器，计数到0时输出',params:[{name:'Cn',type:'COUNTER',desc:'计数器编号'},{name:'Knn',type:'INT',desc:'设定值'}],example:`LD X000\nAND M8013   // 1秒脉冲\nCNT C0 K10  // 计10次\nLD C0\nOUT Y000    // 10秒后输出`,pitfalls:['三菱CNT是减计数器，不是加计数器','CNT有掉电保持功能（C0-C199）','复位用RST C0指令','16位计数器范围：1~32767'],tags:['计数器','三菱']},
+
+// ========== 数学运算 ==========
+{name:'ADD',brand:'通用IEC',category:'数学运算',syntax:'ADD(IN1, IN2, OUT)',desc:'加法运算 OUT = IN1 + IN2',params:[{name:'IN1',type:'ANY_NUM',desc:'加数1'},{name:'IN2',type:'ANY_NUM',desc:'加数2'},{name:'OUT',type:'ANY_NUM',desc:'结果'}],example:`VAR\n  a,b,c: INT;\nEND_VAR\nc := a + b;  // SCL写法\n// 或 ADD(a, b, c);`,pitfalls:['INT加法超出-32768~32767会溢出，结果不正确','不同类型混合运算时先转REAL','三菱中ADD D0 D1 D2 表示D2=D0+D1，注意操作数顺序'],tags:['数学','基础']},
+{name:'SUB',brand:'通用IEC',category:'数学运算',syntax:'SUB(IN1, IN2, OUT)',desc:'减法运算 OUT = IN1 - IN2',params:[{name:'IN1',type:'ANY_NUM',desc:'被减数'},{name:'IN2',type:'ANY_NUM',desc:'减数'},{name:'OUT',type:'ANY_NUM',desc:'结果'}],example:`c := a - b;`,pitfalls:['结果为负数时INT类型正常（有符号），但DINT/REAL注意范围','减法溢出同样会导致错误结果','工业中常用于偏差计算：偏差=设定值-实际值'],tags:['数学']},
+{name:'MUL',brand:'通用IEC',category:'数学运算',syntax:'MUL(IN1, IN2, OUT)',desc:'乘法运算 OUT = IN1 × IN2',params:[{name:'IN1',type:'ANY_NUM',desc:'乘数1'},{name:'IN2',type:'ANY_NUM',desc:'乘数2'},{name:'OUT',type:'ANY_NUM',desc:'结果'}],example:`c := a * b;`,pitfalls:['INT×INT结果可能溢出INT范围，需用DINT接收','两个INT相乘结果建议先转REAL再乘','三菱16位乘法：MUL D0 D1 D3，结果占D3和D4两个寄存器(32位)'],tags:['数学']},
+{name:'DIV',brand:'通用IEC',category:'数学运算',syntax:'DIV(IN1, IN2, OUT)',desc:'除法运算 OUT = IN1 ÷ IN2',params:[{name:'IN1',type:'ANY_NUM',desc:'被除数'},{name:'IN2',type:'ANY_NUM',desc:'除数'},{name:'OUT',type:'ANY_NUM',desc:'结果'}],example:`c := a / b;`,pitfalls:['⚠️ 除数为0会导致PLC停机！必须先判断除数≠0','整数除法会截断小数部分，需精度时先转REAL','MOD指令可获取余数'],tags:['数学','危险']},
+{name:'MOD',brand:'通用IEC',category:'数学运算',syntax:'MOD(IN1, IN2, OUT)',desc:'取模运算 OUT = IN1 MOD IN2（余数）',params:[{name:'IN1',type:'ANY_INT',desc:'被除数'},{name:'IN2',type:'ANY_INT',desc:'除数'},{name:'OUT',type:'ANY_INT',desc:'余数'}],example:`remainder := value MOD 10;`,pitfalls:['除数为0同样会导致错误','只对整数类型有效','常用于循环计数、奇偶判断、分页'],tags:['数学']},
+{name:'INC',brand:'通用IEC',category:'数学运算',syntax:'INC operand',desc:'加1指令，操作数自增1',params:[{name:'operand',type:'ANY_INT',desc:'要自增的变量'}],example:`// 西门子STL:\nL   MW0\nINC 1\nT   MW0\n\n// SCL:\nCounter := Counter + 1;`,pitfalls:['三菱用INC不需要操作数（隐含对D寄存器操作）','溢出后会回到最小值','扫描周期内多次INC同一地址，每次都会加1'],tags:['数学']},
+{name:'DEC',brand:'通用IEC',category:'数学运算',syntax:'DEC operand',desc:'减1指令，操作数自减1',params:[{name:'operand',type:'ANY_INT',desc:'要自减的变量'}],example:`Counter := Counter - 1;`,pitfalls:['减到最小值后会溢出到最大值','常与CTU配合做二次计数'],tags:['数学']},
+{name:'NEG',brand:'通用IEC',category:'数学运算',syntax:'NEG operand',desc:'取反运算，将数值变为相反数',params:[{name:'operand',type:'ANY_NUM',desc:'要取反的数值'}],example:`// SCL:\nresult := -value;\n// 或 NEG(value);`,pitfalls:['对0取反结果仍为0','对INT最小值(-32768)取反会溢出','常用于PID控制中改变输出方向'],tags:['数学']},
+{name:'SQRT',brand:'通用IEC',category:'数学运算',syntax:'SQRT(IN, OUT)',desc:'平方根运算',params:[{name:'IN',type:'REAL',desc:'输入值'},{name:'OUT',type:'REAL',desc:'结果'}],example:`result := SQRT(value);`,pitfalls:['输入为负数时结果为NaN或PLC报错','结果为REAL类型','常用于计算RMS值、距离等'],tags:['数学','高级']},
+
+// ========== 比较 ==========
+{name:'CMP',brand:'通用IEC',category:'比较',syntax:'CMP(IN1, IN2)',desc:'比较两个值，返回大于/等于/小于',params:[{name:'IN1',type:'ANY',desc:'比较值1'},{name:'IN2',type:'ANY',desc:'比较值2'}],example:`// 西门子STL:\nL   MW0\nL   MW2\n==I      // 等于?\n=  M0.0\n\n// SCL直接写:\nIF value >= 100 THEN ...`,pitfalls:['比较REAL时不要用==，用差值范围判断','三菱CMP结果用M8021(大于)、M8020(等于)、M8022(小于)获取','不同类型比较时注意隐式转换'],tags:['比较','基础']},
+{name:'==/>/<',brand:'通用IEC',category:'比较',syntax:'IN1 == IN2 / IN1 > IN2 / IN1 < IN2',desc:'IEC标准比较运算符',params:[{name:'IN1',type:'ANY',desc:'左操作数'},{name:'IN2',type:'ANY',desc:'右操作数'}],example:`IF temperature > 80.0 THEN\n    alarm := TRUE;\nEND_IF;\n\n// 梯形图中用比较触点`,pitfalls:['REAL比较用==不可靠，浮点误差导致判断失败','建议：ABS(a-b) < 0.001 替代 a==b','字符串比较按字典序，注意大小写'],tags:['比较','基础']},
+{name:'LIMIT',brand:'西门子',category:'比较',syntax:'LIMIT(MN, IN, MX)',desc:'限幅函数，将IN限制在MN和MX之间',params:[{name:'MN',type:'ANY_NUM',desc:'最小值'},{name:'IN',type:'ANY_NUM',desc:'输入值'},{name:'MX',type:'ANY_NUM',desc:'最大值'}],example:`// 输出限幅在0~100%\noutput := LIMIT(0.0, pid_out, 100.0);`,pitfalls:['MN>MX时行为未定义，需先确保MN<=MX','用于PID输出限幅、阀门开度限制等','西门子标准库函数，三菱需手动实现'],tags:['比较','限幅','西门子']},
+
+// ========== 数据处理 ==========
+{name:'MOVE',brand:'通用IEC',category:'数据处理',syntax:'MOVE(IN, OUT)',desc:'数据传送，将IN的值复制到OUT',params:[{name:'IN',type:'ANY',desc:'源数据'},{name:'OUT',type:'ANY',desc:'目标地址'}],example:`// SCL:\nMW0 := MW2;\n// 或 MOVE(MW2, MW0);\n\n// 三菱:\nMOV D0 D10`,pitfalls:['西门子S7-1200默认不支持STRING→INT直接转换，需用STRG_TO_INT','数据类型不匹配可能静默截断（INT→BYTE丢高字节）','MOVE只能搬单个值，块传送用BLKMOV/FILL'],tags:['数据处理','基础']},
+{name:'CONV',brand:'通用IEC',category:'数据处理',syntax:'目标类型_TO_源类型(IN)',desc:'数据类型转换，如INT_TO_REAL、REAL_TO_INT等',params:[{name:'IN',type:'ANY',desc:'要转换的值'}],example:`varReal := INT_TO_REAL(varInt);\nvarInt := REAL_TO_INT(varReal);  // 截断小数`,pitfalls:['REAL_TO_INT会截断小数（不是四舍五入），用ROUND做四舍五入','类型溢出时结果不可靠，如INT_TO_BYTE(300)','西门子S7-1500支持更多类型转换函数'],tags:['数据处理','类型转换']},
+{name:'SCALE',brand:'通用IEC',category:'数据处理',syntax:'SCALE(RawMin, RawMax, EngMin, EngMax, RawValue)',desc:'模拟量标定（原始值→工程值）',params:[{name:'RawMin',type:'INT',desc:'原始值下限（如0）'},{name:'RawMax',type:'INT',desc:'原始值上限（如27648）'},{name:'EngMin',type:'REAL',desc:'工程值下限（如0.0）'},{name:'EngMax',type:'REAL',desc:'工程值上限（如100.0）'},{name:'RawValue',type:'INT',desc:'当前原始值'}],example:`// 4-20mA → 0~100°C\nEngValue := (INT_TO_REAL(RawValue) / 27648.0) * 100.0;`,pitfalls:['西门子NORM_X+SCALE_X是标准做法，先归一化再标定','原始值超出量程时应做限幅处理','不同PLC原始值范围不同：S7-1200为0~27648，三菱为0~4000'],tags:['数据处理','模拟量']},
+{name:'UNSCALE',brand:'通用IEC',category:'数据处理',syntax:'UNSCALE(EngMin, EngMax, RawMin, RawMax, EngValue)',desc:'模拟量反标定（工程值→原始值）',params:[{name:'EngMin',type:'REAL',desc:'工程值下限'},{name:'EngMax',type:'REAL',desc:'工程值上限'},{name:'RawMin',type:'INT',desc:'原始值下限'},{name:'RawMax',type:'INT',desc:'原始值上限'},{name:'EngValue',type:'REAL',desc:'当前工程值'}],example:`// 0~100°C → 4-20mA\nRawValue := REAL_TO_INT((EngValue / 100.0) * 27648.0);`,pitfalls:['用于模拟量输出(AO)时的反向计算','输出前必须限幅到RawMin~RawMax范围','注意工程值的方向是否需要反转'],tags:['数据处理','模拟量']},
+{name:'SWAP',brand:'西门子',category:'数据处理',syntax:'SWAP(IN, OUT)',desc:'字节交换（大小端转换），高低字节互换',params:[{name:'IN',type:'WORD/DWORD',desc:'输入数据'},{name:'OUT',type:'WORD/DWORD',desc:'交换后结果'}],example:`// WORD 0x1234 → 0x3412\nSWAP(in:=W#16#1234, out=>result);`,pitfalls:['Modbus通信时经常需要SWAP处理字节序','DWORD的SWAP只交换相邻字节，不是完全反转','不同设备字节序不同，通信前必须确认'],tags:['数据处理','通信']},
+{name:'FILL',brand:'西门子',category:'数据处理',syntax:'FILL(VAL, OUT, COUNT)',desc:'块填充，用指定值填充一段连续区域',params:[{name:'VAL',type:'ANY',desc:'填充值'},{name:'OUT',type:'ANY',desc:'起始地址'},{name:'COUNT',type:'INT',desc:'填充数量'}],example:`// 将MW0~MW9全部清零\nFILL(VAL:=0, OUT:=MW0, COUNT:=10);`,pitfalls:['COUNT为0时不执行','填充区域不能超出PLC可用内存范围','三菱用FMOV指令实现类似功能'],tags:['数据处理']},
+
+// ========== 移位 ==========
+{name:'SHL',brand:'通用IEC',category:'移位',syntax:'SHL(IN, N, OUT)',desc:'逻辑左移，低位补0',params:[{name:'IN',type:'ANY_BIT',desc:'输入数据'},{name:'N',type:'INT',desc:'移位位数'},{name:'OUT',type:'ANY_BIT',desc:'结果'}],example:`// WORD左移2位\nresult := SHL(value, 2);`,pitfalls:['移出的高位直接丢失','N>=数据位数时结果为0','常用于步进电机脉冲序列、数据打包'],tags:['移位']},
+{name:'SHR',brand:'通用IEC',category:'移位',syntax:'SHR(IN, N, OUT)',desc:'逻辑右移，高位补0',params:[{name:'IN',type:'ANY_BIT',desc:'输入数据'},{name:'N',type:'INT',desc:'移位位数'},{name:'OUT',type:'ANY_BIT',desc:'结果'}],example:`// 右移4位相当于除以16\nresult := SHR(value, 4);`,pitfalls:['有符号数右移需用ASHR（算术右移，保留符号位）','逻辑右移高位补0，负数右移会变成正数','常用于提取数据中的特定位段'],tags:['移位']},
+{name:'ROL',brand:'通用IEC',category:'移位',syntax:'ROL(IN, N, OUT)',desc:'循环左移，移出的高位回到低位',params:[{name:'IN',type:'ANY_BIT',desc:'输入数据'},{name:'N',type:'INT',desc:'移位位数'},{name:'OUT',type:'ANY_BIT',desc:'结果'}],example:`// ROL实现流水灯效果\nLED := ROL(LED, 1);`,pitfalls:['循环移位不丢失数据','N可能需要MOD数据位数后使用','常用于LED流水灯、循环缓冲区指针'],tags:['移位']},
+{name:'ROR',brand:'通用IEC',category:'移位',syntax:'ROR(IN, N, OUT)',desc:'循环右移',params:[{name:'IN',type:'ANY_BIT',desc:'输入数据'},{name:'N',type:'INT',desc:'移位位数'},{name:'OUT',type:'ANY_BIT',desc:'结果'}],example:`result := ROR(value, 1);`,pitfalls:['与ROL方向相反','MODBUS CRC计算中用到循环移位','注意数据类型宽度对移位结果的影响'],tags:['移位']},
+
+// ========== 程序控制 ==========
+{name:'JMP',brand:'通用IEC',category:'程序控制',syntax:'JMP label',desc:'无条件跳转到指定标签',params:[{name:'label',type:'LABEL',desc:'目标标签名'}],example:`JMP SKIP;\n// 跳过这段代码\nSKIP:`,pitfalls:['过度使用JMP导致程序可读性差','S7-1200/1500中SCL支持但不推荐滥用','三菱JMP编号范围：JMP n (n=0~255)'],tags:['程序控制']},
+{name:'CALL',brand:'通用IEC',category:'程序控制',syntax:'CALL FC/FB(params)',desc:'调用函数(FC)或函数块(FB)',params:[{name:'FC/FB',type:'BLOCK',desc:'要调用的程序块'},{name:'params',type:'ANY',desc:'输入输出参数'}],example:`// SCL:\nCALL FC1(\n    Input1 := sensor,\n    Input2 := setpoint,\n    Output => result\n);`,pitfalls:['FB需要背景DB（实例数据块），FC不需要','S7-1200中FC最大嵌套深度为8层','参数类型不匹配可能编译不报错但运行结果错误','RET指令用于提前返回'],tags:['程序控制','模块化']},
+{name:'RET',brand:'通用IEC',category:'程序控制',syntax:'RETURN',desc:'从当前函数/子程序返回',params:[],example:`FUNCTION MyFunc : INT\nIF error THEN\n    RETURN;  // 提前返回\nEND_IF;\nMyFunc := result;`,pitfalls:['FC中RETURN时需要设置返回值（如果有）','FB中RETURN后背景DB数据保持','在FOR循环中RETURN会跳出整个函数而非仅跳出循环'],tags:['程序控制']},
+{name:'FOR/NEXT',brand:'通用IEC',category:'程序控制',syntax:'FOR i:=start TO end BY step ... NEXT',desc:'循环控制，从start到end按step步进执行',params:[{name:'i',type:'INT',desc:'循环变量'},{name:'start',type:'INT',desc:'起始值'},{name:'end',type:'INT',desc:'结束值'},{name:'step',type:'INT',desc:'步长(默认1)'}],example:`FOR i := 0 TO 9 BY 1 DO\n    data[i] := 0;  // 清零数组\nEND_FOR;`,pitfalls:['⚠️ 循环次数过大可能导致看门狗超时(WDT)，PLC停机','嵌套循环注意总次数 = 外层×内层','S7-1200 WDT默认约6秒，大循环需分批执行','三菱用FOR/NEXT，编号对应：FOR K10 / NEXT'],tags:['程序控制','循环']},
+{name:'MC/MCR',brand:'三菱',category:'程序控制',syntax:'MC N0 M100 ... MCR N0',desc:'主控指令，MC到MCR之间的程序受M100控制',params:[{name:'N',type:'INT',desc:'嵌套编号(0~7)'},{name:'M',type:'BOOL',desc:'主控触点'}],example:`LD X000\nMC  N0 M100    // X000控制以下程序\n    LD X001\n    OUT Y000\n    LD X002\n    OUT Y001\nMCR N0          // 主控结束`,pitfalls:['MC/MCR必须配对使用','嵌套最多8级(N0~N7)，不能交叉','MC断开时，区间内OUT清零、SET/RST不执行','MC内不能使用MPS/MRD/MPP（三菱）'],tags:['程序控制','三菱']},
+{name:'STOP',brand:'通用IEC',category:'程序控制',syntax:'STOP',desc:'停止PLC运行，进入停止模式',params:[],example:`IF fatal_error THEN\n    STOP;  // 严重故障时停机\nEND_IF;`,pitfalls:['⚠️ STOP会导致PLC所有输出关闭，谨慎使用','停机后需手动重启或通过编程软件切换到RUN','常用于安全保护：急停、硬件故障等不可恢复场景'],tags:['程序控制','安全']},
+
+// ========== 通信 ==========
+{name:'SEND',brand:'西门子',category:'通信',syntax:'SEND(ID, DONE, ERR, DATA)',desc:'S7通信发送数据块',params:[{name:'ID',type:'INT',desc:'连接ID'},{name:'DONE',type:'BOOL',desc:'发送完成标志'},{name:'ERR',type:'BOOL',desc:'错误标志'},{name:'DATA',type:'ANY',desc:'发送数据区'}],example:`// TSEND_C 发送数据\nTSEND_C(\n    REQ  := SendTrigger,\n    DATA := SendBuffer,\n    LEN  := SendLen\n);`,pitfalls:['S7-1200/1500推荐用TSEND_C/TRCV_C（带连接管理）','发送缓冲区大小受CPU型号限制','通信超时需设置合理的时间参数','需在设备组态中先配置通信连接'],tags:['通信','西门子']},
+{name:'RECV',brand:'西门子',category:'通信',syntax:'RECV(ID, DONE, ERR, DATA)',desc:'S7通信接收数据块',params:[{name:'ID',type:'INT',desc:'连接ID'},{name:'DONE',type:'BOOL',desc:'接收完成标志'},{name:'ERR',type:'BOOL',desc:'错误标志'},{name:'DATA',type:'ANY',desc:'接收数据区'}],example:`// TRCV_C 接收数据\nTRCV_C(\n    EN_R := TRUE,\n    DATA := RecvBuffer,\n    LEN  => RecvLen\n);`,pitfalls:['接收缓冲区必须足够大，否则数据溢出','DONE信号持续一个周期，需用边沿捕获','通信故障时检查连接状态和IP配置'],tags:['通信','西门子']},
+{name:'Modbus读',brand:'通用IEC',category:'通信',syntax:'Modbus_FC03/FC04(Slave,Addr,Qty,Data)',desc:'Modbus读保持寄存器(FC03)/输入寄存器(FC04)',params:[{name:'Slave',type:'BYTE',desc:'从站地址(1~247)'},{name:'Addr',type:'INT',desc:'起始寄存器地址'},{name:'Qty',type:'INT',desc:'读取数量'},{name:'Data',type:'ARRAY',desc:'接收数据数组'}],example:`// 西门子 MB_CLIENT\nMB_CLIENT(\n    REQ   := ReadTrigger,\n    MB_MODE   := 0,       // 读\n    MB_DATA_ADDR := 100,  // 起始地址\n    MB_DATA_LEN  := 10,   // 读10个寄存器\n    MB_DATA      := ReadBuf\n);`,pitfalls:['Modbus地址从0还是1开始因设备而异（有的+1偏移）','一次最多读125个寄存器（协议限制）','FC03读保持寄存器，FC04读输入寄存器，不要混用','超时时间根据波特率和距离调整'],tags:['通信','Modbus']},
+{name:'Modbus写',brand:'通用IEC',category:'通信',syntax:'Modbus_FC06/FC16(Slave,Addr,Data)',desc:'Modbus写单个寄存器(FC06)/写多个寄存器(FC16)',params:[{name:'Slave',type:'BYTE',desc:'从站地址'},{name:'Addr',type:'INT',desc:'寄存器地址'},{name:'Data',type:'ARRAY',desc:'写入数据'}],example:`// FC06 写单个寄存器\nMB_CLIENT(\n    REQ   := WriteTrigger,\n    MB_MODE   := 1,       // 写\n    MB_DATA_ADDR := 200,\n    MB_DATA_LEN  := 1,\n    MB_DATA      := WriteBuf\n);`,pitfalls:['FC06写单个，FC16写多个，根据需求选择','写入前确认目标寄存器是否可写','部分从站设备只支持FC06不支持FC16','写入频率不宜过高，避免通信拥堵'],tags:['通信','Modbus']},
+
+// ========== 字符串 ==========
+{name:'CONCAT',brand:'通用IEC',category:'字符串',syntax:'CONCAT(IN1, IN2, OUT)',desc:'字符串连接，将IN1和IN2拼接到OUT',params:[{name:'IN1',type:'STRING',desc:'字符串1'},{name:'IN2',type:'STRING',desc:'字符串2'},{name:'OUT',type:'STRING',desc:'结果字符串'}],example:`strResult := CONCAT('温度=', REAL_TO_STRING(temp));`,pitfalls:['结果字符串超长会被截断，注意STRING最大长度','西门子STRING默认254字节','拼接REAL前先格式化，否则小数位不确定'],tags:['字符串']},
+{name:'FIND',brand:'通用IEC',category:'字符串',syntax:'FIND(IN1, IN2)',desc:'查找子串在主串中的位置（从1开始，0表示未找到）',params:[{name:'IN1',type:'STRING',desc:'主字符串'},{name:'IN2',type:'STRING',desc:'搜索的子串'}],example:`pos := FIND('Hello World', 'World'); // pos=7`,pitfalls:['返回值从1开始，0表示未找到（不是-1）','区分大小写','三菱用INSTR指令，参数顺序可能不同'],tags:['字符串']},
+{name:'LEN',brand:'通用IEC',category:'字符串',syntax:'LEN(IN)',desc:'获取字符串长度',params:[{name:'IN',type:'STRING',desc:'输入字符串'}],example:`length := LEN('Hello'); // length=5`,pitfalls:['不含结束符','西门子STRING的第一个字节是最大长度，第二字节是实际长度','空字符串长度为0'],tags:['字符串']},
+{name:'LEFT/RIGHT/MID',brand:'通用IEC',category:'字符串',syntax:'LEFT(IN,L)/RIGHT(IN,L)/MID(IN,L,P)',desc:'取左/右/中间子串',params:[{name:'IN',type:'STRING',desc:'源字符串'},{name:'L',type:'INT',desc:'取的长度'},{name:'P',type:'INT',desc:'起始位置(MID)'}],example:`s1 := LEFT('Hello', 2);   // 'He'\ns2 := RIGHT('Hello', 3);  // 'llo'\ns3 := MID('Hello', 2, 3); // 'ell'`,pitfalls:['MID的起始位置从1开始','取的长度超出字符串实际长度时不会报错，返回可用部分','字符串处理在PLC中开销较大，尽量减少调用频率'],tags:['字符串']},
+
+// ========== 模拟量 ==========
+{name:'SCALE_X',brand:'西门子',category:'模拟量',syntax:'SCALE_X(IN, MIN, MAX, BIPOLAR)',desc:'西门子标准模拟量标定（原始值归一化→工程值）',params:[{name:'IN',type:'REAL',desc:'归一化输入(0.0~1.0)'},{name:'MIN',type:'REAL',desc:'工程值下限'},{name:'MAX',type:'REAL',desc:'工程值上限'},{name:'BIPOLAR',type:'BOOL',desc:'TRUE=双极性(-27648~27648)'}],example:`// 4-20mA → 0~100.0°C\nNORM_X(IN:=INT_TO_REAL(RawADC), MIN:=0.0, MAX:=27648.0) => normVal;\nSCALE_X(IN:=normVal, MIN:=0.0, MAX:=100.0, BIPOLAR:=FALSE) => temp;`,pitfalls:['必须先用NORM_X归一化，再用SCALE_X标定，两步缺一不可','BIPOLAR参数选错会导致量程不对','S7-1200的模拟量分辨率是10位(0~27648)，S7-300是12位(0~27648)','原始值超出量程时NORM_X会返回>1.0或<0.0的值'],tags:['模拟量','西门子','标定']},
+{name:'AVERAGE',brand:'通用IEC',category:'模拟量',syntax:'自定义：移动平均滤波',desc:'模拟量滑动平均滤波，消除采集噪声',params:[{name:'NewSample',type:'REAL',desc:'最新采样值'},{name:'Buffer',type:'ARRAY',desc:'历史数据缓冲区'},{name:'WindowSize',type:'INT',desc:'窗口大小'}],example:`// 简单指数移动平均\nfiltered := 0.1 * raw + 0.9 * filtered;`,pitfalls:['窗口越大滤波效果越好但响应越慢','工业现场建议8~32点平均','与一阶滞后滤波的区别：移动平均有固定延迟','注意PLC扫描周期对采样频率的影响'],tags:['模拟量','滤波']},
+
+// 补充指令以达到50+
+{name:'S/R(置位复位)',brand:'西门子',category:'位逻辑',syntax:'S operand / R operand',desc:'西门子STL中的置位/复位指令（等同于SET/RST）',params:[{name:'operand',type:'BOOL',desc:'位地址'}],example:`A   I0.0\nS   Q0.0    // 置位\n\nA   I0.1\nR   Q0.0    // 复位`,pitfalls:['S和R同时触发时，R优先（R在后面执行）','与SET/RST的区别仅是助记符，功能完全相同','S7中R同时可复位定时器和计数器'],tags:['位逻辑','西门子']},
+{name:'BLKMOV',brand:'西门子',category:'数据处理',syntax:'BLKMOV(IN, OUT, COUNT)',desc:'块移动，复制一段连续数据区到另一区域',params:[{name:'IN',type:'ANY',desc:'源起始地址'},{name:'OUT',type:'ANY',desc:'目标起始地址'},{name:'COUNT',type:'INT',desc:'复制的数据个数'}],example:`// 复制MW0~MW9到MW100~MW109\nBLKMOV(MW0, MW100, 10);`,pitfalls:['源和目标区域不能重叠，否则结果不可预测','超出PLC内存范围会报错','三菱用BMOV指令实现类似功能'],tags:['数据处理','西门子']},
+{name:'XOR',brand:'通用IEC',category:'位逻辑',syntax:'XOR(IN1, IN2, OUT)',desc:'异或运算，两位不同为1',params:[{name:'IN1',type:'ANY_BIT',desc:'操作数1'},{name:'IN2',type:'ANY_BIT',desc:'操作数2'},{name:'OUT',type:'ANY_BIT',desc:'结果'}],example:`// 位取反：与全1异或\nresult := value XOR 16#FF;`,pitfalls:['XOR自身=0，可用于检测变化','MODBUS CRC计算中大量使用XOR','两个相同值XOR结果为0'],tags:['位逻辑','数学']},
+{name:'AND_W',brand:'西门子',category:'位逻辑',syntax:'AND_W(IN1, IN2, OUT)',desc:'字与运算，按位AND',params:[{name:'IN1',type:'WORD',desc:'操作数1'},{name:'IN2',type:'WORD',desc:'操作数2'},{name:'OUT',type:'WORD',desc:'结果'}],example:`// 提取低8位\nresult := value AND 16#00FF;`,pitfalls:['AND用于位屏蔽，提取特定位','注意WORD/DWORD/BYTE指令不同','三菱用WAND指令'],tags:['位逻辑']},
+{name:'OR_W',brand:'西门子',category:'位逻辑',syntax:'OR_W(IN1, IN2, OUT)',desc:'字或运算，按位OR',params:[{name:'IN1',type:'WORD',desc:'操作数1'},{name:'IN2',type:'WORD',desc:'操作数2'},{name:'OUT',type:'WORD',desc:'结果'}],example:`// 将第3位置1\nresult := value OR 16#0004;`,pitfalls:['OR用于置位特定位（不影响其他位）','三菱用WOR指令','与AND_W配合使用实现位操作'],tags:['位逻辑']},
+{name:'INT_TO_REAL',brand:'通用IEC',category:'数据处理',syntax:'INT_TO_REAL(IN)',desc:'整数转实数',params:[{name:'IN',type:'INT',desc:'整数值'}],example:`tempReal := INT_TO_REAL(rawADC);`,pitfalls:['转换无精度损失（INT范围在REAL精度内）','不转REAL直接做除法会截断','几乎所有模拟量计算第一步都是INT_TO_REAL'],tags:['数据处理','类型转换']},
+{name:'REAL_TO_INT',brand:'通用IEC',category:'数据处理',syntax:'REAL_TO_INT(IN)',desc:'实数转整数（截断小数）',params:[{name:'IN',type:'REAL',desc:'实数值'}],example:`rawInt := REAL_TO_INT(engValue);`,pitfalls:['⚠️ 截断不是四舍五入：3.9→3','用ROUND()实现四舍五入','REAL超出INT范围时结果不确定，先限幅'],tags:['数据处理','类型转换']},
+{name:'ROUND',brand:'通用IEC',category:'数据处理',syntax:'ROUND(IN)',desc:'四舍五入取整',params:[{name:'IN',type:'REAL',desc:'实数值'}],example:`result := ROUND(3.6); // result=4`,pitfalls:['ROUND返回REAL类型，需再转INT','0.5的舍入方向因PLC品牌而异','TRUNC是截断，ROUND是四舍五入，注意区别'],tags:['数据处理','类型转换']},
+{name:'PID',brand:'通用IEC',category:'控制',syntax:'PID(AUTO, PV, SP, KP, TR, TD, CYCLE)',desc:'PID控制器功能块',params:[{name:'AUTO',type:'BOOL',desc:'自动/手动切换'},{name:'PV',type:'REAL',desc:'过程变量（反馈）'},{name:'SP',type:'REAL',desc:'设定值'},{name:'KP',type:'REAL',desc:'比例增益'},{name:'TR',type:'REAL',desc:'积分时间'},{name:'TD',type:'REAL',desc:'微分时间'},{name:'CYCLE',type:'TIME',desc:'采样周期'}],example:`PID_CTRL(\n    AUTO := autoMode,\n    PV   := temperature,\n    SP   := setpoint,\n    KP   := 2.0,\n    TR   := T#10S,\n    TD   := T#1S,\n    CYCLE := T#100MS\n);\noutput := PID_CTRL.Y;`,pitfalls:['PID参数整定不当会导致系统振荡','采样周期必须与实际调用周期一致','西门子PID_Compact内置自整定功能','积分饱和(anti-windup)需要特殊处理'],tags:['控制','PID','高级']},
+{name:'TONR(西门子)',brand:'西门子',category:'定时器',syntax:'TONR(IN:=, PT:=, R:=, Q=>, ET=>)',desc:'西门子IEC定时器（带背景DB实例）',params:[{name:'IN',type:'BOOL',desc:'使能'},{name:'PT',type:'TIME',desc:'预设时间'},{name:'R',type:'BOOL',desc:'复位'}],example:`"DB_Timer".TON1(\n    IN := "Start",\n    PT := T#10S,\n    R  := "Reset"\n);\n"Running" := "DB_Timer".TON1.Q;`,pitfalls:['⚠️ 每个定时器实例必须有独立的背景DB或在FB中','多个TON共享一个DB时用不同的实例名','S7-1200最多支持的定时器数量受DB数量限制','IEC定时器与S5Timer不可混用'],tags:['定时器','西门子']},
+{name:'FROM/TO',brand:'三菱',category:'数据处理',syntax:'FROM m1 m2 D n / TO m1 m2 D n',desc:'三菱特殊模块读写指令（读取模拟量/通信模块）',params:[{name:'m1',type:'INT',desc:'模块号(0~7)'},{name:'m2',type:'INT',desc:'缓冲寄存器地址'},{name:'D',type:'REG',desc:'PLC数据寄存器'},{name:'n',type:'INT',desc:'数据个数'}],example:`// 读取0号模块BFM#0的值到D0\nFROM K0 K0 D0 K1\n\n// 写D100值到0号模块BFM#1\nTO K0 K1 D100 K1`,pitfalls:['模块号对应PLC左侧扩展模块的物理位置','FROM/TO执行期间会占用PLC扫描时间','大量FROM/TO会影响扫描周期','新版三菱推荐用缓冲区直接刷新功能'],tags:['数据处理','三菱','模拟量']},
+{name:'ZCP',brand:'三菱',category:'比较',syntax:'ZCP lower upper source dest',desc:'区间比较指令，判断值是否在指定范围内',params:[{name:'lower',type:'INT',desc:'下限'},{name:'upper',type:'INT',desc:'上限'},{name:'source',type:'INT',desc:'比较值'},{name:'dest',type:'M',desc:'结果输出(3个连续位)'}],example:`ZCP K10 K50 D0 M0\n// M0=1: D0<10\n// M1=1: 10<=D0<=50\n// M2=1: D0>50`,pitfalls:['结果输出占用3个连续位地址','下限必须<=上限，否则结果不可靠','等价于两个CMP指令组合'],tags:['比较','三菱']},
+{name:'MOV_K',brand:'三菱',category:'数据处理',syntax:'MOV Knn Dn / MOV Hnn Dn',desc:'三菱常数传送，将常数送入数据寄存器',params:[{name:'Knn',type:'INT',desc:'十进制常数'},{name:'Hnn',type:'WORD',desc:'十六进制常数'},{name:'Dn',type:'REG',desc:'目标寄存器'}],example:`MOV K100 D0      // D0=100\nMOV H00FF D1     // D1=255`,pitfalls:['K前缀=十进制，H前缀=十六进制','D开头的值表示寄存器地址，不是常数','MOV指令16位，DMOV用于32位传送'],tags:['数据处理','三菱']},
+{name:'WDT_FEED',brand:'西门子',category:'程序控制',syntax:'CALL RE_TRIGR',desc:'看门狗喂狗/重触发指令',params:[],example:`// 在长循环中喂狗\nFOR i := 0 TO 9999 DO\n    data[i] := 0;\n    IF i MOD 100 = 0 THEN\n        RE_TRIGR();  // 每100次喂一次狗\n    END_IF;\nEND_FOR;`,pitfalls:['⚠️ 长循环必须喂狗，否则WDT超时PLC停机','S7-1200中用RE_TRIGR系统函数','S7-300/400中用SFC 43 RE_TRIGR','喂狗频率不能太频繁，也会增加开销'],tags:['程序控制','西门子','安全']},
+{name:'GET/PUT',brand:'西门子',category:'通信',syntax:'GET/PUT(params)',desc:'S7通信中的主动读(GET)/写(PUT)对端CPU数据',params:[{name:'REQ',type:'BOOL',desc:'触发信号'},{name:'ID',type:'CONN',desc:'连接标识'},{name:'ADDR',type:'ANY',desc:'对方地址区'},{name:'DATA',type:'ANY',desc:'本地数据区'}],example:`GET_BLOCK(\n    REQ  := ReadTrigger,\n    ID   := ConnID,\n    ADDR_1 := RemoteDB,\n    DATA_1 := LocalDB\n);`,pitfalls:['被访问的CPU需在属性中开放"允许PUT/GET访问"','S7-1500默认关闭PUT/GET，需手动开启（安全考虑）','连接数有限，频繁GET/PUT会占用连接资源','跨网段通信需配置路由表'],tags:['通信','西门子']},
+{name:'ARRAY_MOVE',brand:'通用IEC',category:'数据处理',syntax:'自定义数组拷贝',desc:'数组批量数据搬移',params:[{name:'src',type:'ARRAY',desc:'源数组'},{name:'dst',type:'ARRAY',desc:'目标数组'},{name:'count',type:'INT',desc:'搬移数量'}],example:`FOR i := 0 TO 9 DO\n    dst[i] := src[i];\nEND_FOR;`,pitfalls:['数组越界是常见bug，必须检查索引范围','大数组搬移用FOR循环可能影响扫描周期','西门子可用SFC 20 BLKMOV实现高效搬移'],tags:['数据处理']},
+{name:'PULSE_OUT',brand:'通用IEC',category:'位逻辑',syntax:'自定义脉冲发生器',desc:'产生指定宽度的输出脉冲',params:[{name:'Trigger',type:'BOOL',desc:'触发信号'},{name:'PulseWidth',type:'TIME',desc:'脉冲宽度'}],example:`VAR\n  tp1: TP;\nEND_VAR\ntp1(IN:=Start, PT:=T#500MS);\nvalve := tp1.Q;  // 阀门打开500ms`,pitfalls:['脉冲宽度要根据执行机构响应时间选择','TP定时器在脉冲期间忽略重复触发','电磁阀通常需要100ms~500ms脉冲'],tags:['位逻辑','脉冲']},
+];
+
+let activeBrand='', activeCat='';
+function getBrands(){return [...new Set(instructions.map(i=>i.brand))];}
+function getCats(){return [...new Set(instructions.map(i=>i.category))];}
+function renderFilters(){
+  let bhtml=`<span class="tag ${activeBrand===''?'active':''}" onclick="setBrand('')">全部</span>`;
+  bhtml+=getBrands().map(b=>`<span class="tag ${activeBrand===b?'active':''}" onclick="setBrand('${b}')">${b}</span>`).join('');
+  document.getElementById('brandBar').innerHTML=bhtml;
+  let chtml=`<span class="tag ${activeCat===''?'active':''}" onclick="setCat('')">全部</span>`;
+  chtml+=getCats().map(c=>`<span class="tag ${activeCat===c?'active':''}" onclick="setCat('${c}')">${c}</span>`).join('');
+  document.getElementById('catBar').innerHTML=chtml;
+}
+function setBrand(b){activeBrand=b;renderFilters();filterAll();}
+function setCat(c){activeCat=c;renderFilters();filterAll();}
+function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function brandColor(b){
+  if(b.includes('西门子'))return'badge-primary';
+  if(b.includes('三菱'))return'badge-accent';
+  if(b.includes('欧姆龙'))return'badge-warn';
+  return'badge-success';
+}
+function catColor(c){
+  const m={'位逻辑':'badge-primary','定时器':'badge-accent','计数器':'badge-warn','数学运算':'badge-success','比较':'badge-warn','数据处理':'badge-success','移位':'badge-primary','程序控制':'badge-accent','通信':'badge-warn','字符串':'badge-success','模拟量':'badge-primary','控制':'badge-accent'};
+  return m[c]||'badge-primary';
+}
+function filterAll(){
+  let q=document.getElementById('search').value.toLowerCase();
+  let filtered=instructions.filter(i=>{
+    let matchBrand=!activeBrand||i.brand===activeBrand;
+    let matchCat=!activeCat||i.category===activeCat;
+    let matchSearch=!q||[i.name,i.desc,i.syntax,i.brand,...(i.tags||[])].some(s=>s.toLowerCase().includes(q));
+    return matchBrand&&matchCat&&matchSearch;
+  });
+  renderList(filtered);
+}
+function renderList(list){
+  if(!list.length){document.getElementById('instList').innerHTML='<div class="card" style="text-align:center;color:var(--text-dim);">没有匹配的指令</div>';return;}
+  // group by category
+  let groups={};
+  list.forEach(i=>{if(!groups[i.category])groups[i.category]=[];groups[i.category].push(i);});
+  let html='';
+  for(let cat in groups){
+    html+=`<div class="section-label">${cat} (${groups[cat].length})</div>`;
+    groups[cat].forEach((inst,idx)=>{
+      let id='inst_'+inst.name.replace(/[^a-zA-Z0-9]/g,'_')+'_'+idx;
+      html+=`<div class="card inst-card" id="${id}" onclick="toggleInst('${id}')">
+        <div class="inst-head">
+          <span class="inst-arrow">▶</span>
+          <span class="inst-name">${escapeHtml(inst.name)}</span>
+          <span class="badge ${brandColor(inst.brand)}">${inst.brand}</span>
+          <span class="badge ${catColor(inst.category)}">${inst.category}</span>
+          <span class="inst-desc">${escapeHtml(inst.desc)}</span>
+        </div>
+        <div class="inst-body">
+          <div class="inst-syn">语法：<code>${escapeHtml(inst.syntax)}</code></div>
+          ${inst.params&&inst.params.length?`<table class="param-table"><thead><tr><th>参数</th><th>类型</th><th>说明</th></tr></thead><tbody>${inst.params.map(p=>`<tr><td><code>${escapeHtml(p.name)}</code></td><td>${escapeHtml(p.type)}</td><td>${escapeHtml(p.desc)}</td></tr>`).join('')}</tbody></table>`:''}
+          ${inst.example?`<div class="inst-code-label">📝 代码示例</div><div class="snippet" style="position:relative;">${escapeHtml(inst.example)}<button class="copy-btn" onclick="event.stopPropagation();copyText(this.parentElement.textContent.replace('复制','').trim(),this)">复制</button></div>`:''}
+          ${inst.pitfalls&&inst.pitfalls.length?inst.pitfalls.map(p=>`<div class="pitfall-box">⚠️ ${escapeHtml(p)}</div>`).join(''):''}
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('instList').innerHTML=html;
+}
+function toggleInst(id){
+  let el=document.getElementById(id);
+  if(el)el.classList.toggle('open');
+}
+renderFilters();
+filterAll();
+  </script>
+</body>
+</html>

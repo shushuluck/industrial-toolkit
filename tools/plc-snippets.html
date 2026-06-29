@@ -31,7 +31,26 @@ IF I0.0 OR Q0.0 THEN
     ELSE
         Q0.0 := FALSE;
     END_IF;
-END_IF;`},
+END_IF;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="35" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="35" x2="120" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<line x1="120" y1="50" x2="220" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="28" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">I0.0</text>
+<line x1="10" y1="80" x2="80" y2="80" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="65" x2="80" y2="95" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="65" x2="120" y2="95" stroke="#00d4ff" stroke-width="2"/>
+<line x1="120" y1="80" x2="220" y2="80" stroke="#00d4ff" stroke-width="2"/>
+<line x1="220" y1="50" x2="220" y2="80" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="105" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Q0.0</text>
+<line x1="220" y1="50" x2="290" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<line x1="290" y1="35" x2="290" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<line x1="268" y1="60" x2="292" y2="40" stroke="#ff6b35" stroke-width="2"/>
+<line x1="330" y1="35" x2="330" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<text x="310" y="28" text-anchor="middle" fill="#ff6b35" font-size="9" font-family="monospace">I0.1(/)</text>
+<line x1="330" y1="50" x2="430" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<path d="M430,34 Q446,50 430,66" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M470,34 Q454,50 470,66" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="450" y="54" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Q0.0</text>
+<line x1="470" y1="50" x2="590" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">启保停电路：I0.0∥Q0.0 → /I0.1 → (Q0.0)</text>`},
       {title:'定时器 TON (ST)',tags:['定时器','ST','基础'],lang:'iecst',code:`// 延时接通定时器 (TON)
 VAR
     TON1 : TON;
@@ -40,7 +59,22 @@ VAR
 END_VAR
 
 TON1(IN := Start, PT := T#5S);
-Output := TON1.Q;  // 5秒后接通`},
+Output := TON1.Q;  // 5秒后接通`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="35" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="35" x2="120" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<line x1="120" y1="50" x2="190" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="28" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Start</text>
+<rect x="190" y="22" width="140" height="56" rx="3" fill="none" stroke="#ff6b35" stroke-width="2"/>
+<text x="260" y="40" text-anchor="middle" fill="#ff6b35" font-size="10" font-weight="bold" font-family="monospace">TON</text>
+<text x="200" y="55" fill="#aaa" font-size="8" font-family="monospace">IN</text>
+<text x="250" y="55" fill="#aaa" font-size="8" font-family="monospace">PT</text>
+<text x="300" y="55" fill="#aaa" font-size="8" font-family="monospace">ET</text>
+<text x="320" y="55" fill="#aaa" font-size="8" font-family="monospace">Q</text>
+<line x1="330" y1="50" x2="400" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<path d="M400,34 Q416,50 400,66" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M440,34 Q424,50 440,66" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="420" y="54" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Output</text>
+<line x1="440" y1="50" x2="590" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">Start → [TON] → (Output)</text>`},
       {title:'定时器 TOF (ST)',tags:['定时器','ST'],lang:'iecst',code:`// 延时断开定时器 (TOF)
 VAR
     TOF1 : TOF;
@@ -49,7 +83,22 @@ VAR
 END_VAR
 
 TOF1(IN := Trigger, PT := T#3S);
-Output := TOF1.Q;  // 触发断开后保持3秒`},
+Output := TOF1.Q;  // 触发断开后保持3秒`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="35" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="35" x2="120" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<line x1="120" y1="50" x2="190" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="28" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Trigger</text>
+<rect x="190" y="22" width="140" height="56" rx="3" fill="none" stroke="#ff6b35" stroke-width="2"/>
+<text x="260" y="40" text-anchor="middle" fill="#ff6b35" font-size="10" font-weight="bold" font-family="monospace">TOF</text>
+<text x="200" y="55" fill="#aaa" font-size="8" font-family="monospace">IN</text>
+<text x="250" y="55" fill="#aaa" font-size="8" font-family="monospace">PT</text>
+<text x="300" y="55" fill="#aaa" font-size="8" font-family="monospace">ET</text>
+<text x="320" y="55" fill="#aaa" font-size="8" font-family="monospace">Q</text>
+<line x1="330" y1="50" x2="400" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<path d="M400,34 Q416,50 400,66" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M440,34 Q424,50 440,66" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="420" y="54" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Output</text>
+<line x1="440" y1="50" x2="590" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">Trigger → [TOF] → (Output)</text>`},
       {title:'计数器 CTU (ST)',tags:['计数器','ST','基础'],lang:'iecst',code:`// 加计数器 (CTU)
 VAR
     CTU1 : CTU;
@@ -60,7 +109,24 @@ END_VAR
 
 CTU1(CU := Pulse, R := Reset, PV := 10);
 Count := CTU1.CV;      // 当前计数值
-// CTU1.Q 当 CV >= PV 时为 TRUE`},
+// CTU1.Q 当 CV >= PV 时为 TRUE`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<polygon points="90,42 98,50 90,58" fill="none" stroke="#ff6b35" stroke-width="1.5"/>
+<line x1="80" y1="35" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="35" x2="120" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<line x1="120" y1="50" x2="190" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="28" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Pulse(P)</text>
+<rect x="190" y="22" width="170" height="56" rx="3" fill="none" stroke="#ff6b35" stroke-width="2"/>
+<text x="275" y="40" text-anchor="middle" fill="#ff6b35" font-size="10" font-weight="bold" font-family="monospace">CTU</text>
+<text x="200" y="55" fill="#aaa" font-size="8" font-family="monospace">CU</text>
+<text x="235" y="55" fill="#aaa" font-size="8" font-family="monospace">R</text>
+<text x="265" y="55" fill="#aaa" font-size="8" font-family="monospace">PV</text>
+<text x="300" y="55" fill="#aaa" font-size="8" font-family="monospace">CV</text>
+<text x="345" y="55" fill="#aaa" font-size="8" font-family="monospace">Q</text>
+<line x1="360" y1="50" x2="420" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="460" y="42" text-anchor="start" fill="#aaa" font-size="8" font-family="monospace">CV → Count</text>
+<text x="460" y="58" text-anchor="start" fill="#aaa" font-size="8" font-family="monospace">Q → Done</text>
+<line x1="420" y1="50" x2="590" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">Pulse(↑) → [CTU(CU,R,PV)] → CV/Q</text>`},
       {title:'PID 控制器 (ST)',tags:['PID','ST','高级'],lang:'iecst',code:`// PID 控制器 - 通用模板
 VAR
     PID1 : PID;
@@ -82,7 +148,32 @@ PID1(
     YMAN   := 0.0,
     CYCLE  := T#100MS
 );
-Output := PID1.Y;`},
+Output := PID1.Y;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<rect x="80" y="12" width="420" height="76" rx="4" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="290" y="30" text-anchor="middle" fill="#ff6b35" font-size="11" font-weight="bold" font-family="monospace">PID</text>
+<text x="100" y="48" fill="#aaa" font-size="8" font-family="monospace">AUTO</text>
+<text x="155" y="48" fill="#aaa" font-size="8" font-family="monospace">PV</text>
+<text x="200" y="48" fill="#aaa" font-size="8" font-family="monospace">SP</text>
+<text x="245" y="48" fill="#aaa" font-size="8" font-family="monospace">KP</text>
+<text x="285" y="48" fill="#aaa" font-size="8" font-family="monospace">TR</text>
+<text x="325" y="48" fill="#aaa" font-size="8" font-family="monospace">TD</text>
+<text x="370" y="48" fill="#aaa" font-size="8" font-family="monospace">YMAN</text>
+<text x="425" y="48" fill="#aaa" font-size="8" font-family="monospace">CYCLE</text>
+<text x="475" y="48" fill="#aaa" font-size="8" font-family="monospace">Y</text>
+<text x="100" y="78" fill="#00d4ff" font-size="7" font-family="monospace">TRUE</text>
+<text x="155" y="78" fill="#00d4ff" font-size="7" font-family="monospace">Feedback</text>
+<text x="210" y="78" fill="#00d4ff" font-size="7" font-family="monospace">50.0</text>
+<text x="248" y="78" fill="#00d4ff" font-size="7" font-family="monospace">1.0</text>
+<text x="288" y="78" fill="#00d4ff" font-size="7" font-family="monospace">0.5</text>
+<text x="328" y="78" fill="#00d4ff" font-size="7" font-family="monospace">0.1</text>
+<text x="375" y="78" fill="#00d4ff" font-size="7" font-family="monospace">0.0</text>
+<text x="420" y="78" fill="#00d4ff" font-size="7" font-family="monospace">100ms</text>
+<line x1="500" y1="50" x2="540" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<path d="M540,34 Q556,50 540,66" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M580,34 Q564,50 580,66" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="560" y="54" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">Y</text>
+<line x1="500" y1="50" x2="500" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">[PID(AUTO,PV,SP,KP,TR,TD,CYCLE)] → Y</text>`},
       {title:'模拟量线性转换 (ST)',tags:['模拟量','ST','基础'],lang:'iecst',code:`// 模拟量输入线性转换 (4-20mA → 工程值)
 // RawValue: 原始ADC值 (0-27648 for S7-1200)
 // EngValue: 工程值 (如 0-100°C)
@@ -97,7 +188,24 @@ END_VAR
 
 ScaleAI := (INT_TO_REAL(RawValue - RawMin) / 
             INT_TO_REAL(RawMax - RawMin)) 
-           * (EngMax - EngMin) + EngMin;`},
+           * (EngMax - EngMin) + EngMin;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="60" x2="80" y2="60" stroke="#00d4ff" stroke-width="2"/>
+<rect x="80" y="20" width="260" height="80" rx="4" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="210" y="38" text-anchor="middle" fill="#ff6b35" font-size="10" font-weight="bold" font-family="monospace">ScaleAI</text>
+<line x1="80" y1="46" x2="340" y2="46" stroke="#ff6b35" stroke-width="0.5" stroke-dasharray="3"/>
+<text x="100" y="62" fill="#aaa" font-size="8" font-family="monospace">RawValue</text>
+<text x="190" y="62" fill="#aaa" font-size="8" font-family="monospace">EngMin</text>
+<text x="270" y="62" fill="#aaa" font-size="8" font-family="monospace">EngMax</text>
+<text x="100" y="90" fill="#00d4ff" font-size="7" font-family="monospace">INT</text>
+<text x="195" y="90" fill="#00d4ff" font-size="7" font-family="monospace">REAL</text>
+<text x="275" y="90" fill="#00d4ff" font-size="7" font-family="monospace">REAL</text>
+<text x="320" y="62" fill="#aaa" font-size="8" font-family="monospace">OUT</text>
+<line x1="340" y1="60" x2="380" y2="60" stroke="#00d4ff" stroke-width="2"/>
+<path d="M380,44 Q396,60 380,76" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M420,44 Q404,60 420,76" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="400" y="64" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">EngValue</text>
+<line x1="420" y1="60" x2="590" y2="60" stroke="#00d4ff" stroke-width="2"/>
+<text x="450" y="95" text-anchor="start" fill="#888" font-size="7" font-family="monospace">(Raw-RawMin)/(RawMax-RawMin)*(EngMax-EngMin)+EngMin</text>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">RawValue → [ScaleAI(Raw,EngMin,EngMax)] → EngValue</text>`},
       {title:'电机星三角启动 (ST)',tags:['电机','ST','常用'],lang:'iecst',code:`// 星三角启动 - 延时切换
 VAR
     State : INT := 0;        // 0=停止,1=星形,2=三角
@@ -126,7 +234,32 @@ CASE State OF
         ContactorDelta := TRUE;
 END_CASE;
 
-IF StopBtn THEN State := 0; END_IF;`},
+IF StopBtn THEN State := 0; END_IF;`,ladder:`<line x1="10" y1="10" x2="10" y2="110" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="10" x2="590" y2="110" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="35" x2="80" y2="35" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="20" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="20" x2="120" y2="50" stroke="#00d4ff" stroke-width="2"/>
+<line x1="120" y1="35" x2="190" y2="35" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="15" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">StartBtn</text>
+<rect x="190" y="15" width="120" height="40" rx="3" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="250" y="32" text-anchor="middle" fill="#ff6b35" font-size="9" font-weight="bold" font-family="monospace">State</text>
+<text x="250" y="48" text-anchor="middle" fill="#aaa" font-size="7" font-family="monospace">CASE FSM</text>
+<line x1="310" y1="25" x2="370" y2="25" stroke="#00d4ff" stroke-width="2"/>
+<line x1="310" y1="45" x2="370" y2="45" stroke="#00d4ff" stroke-width="2"/>
+<path d="M370,9 Q386,25 370,41" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M410,9 Q394,25 410,41" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="390" y="20" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">Star</text>
+<line x1="410" y1="25" x2="590" y2="25" stroke="#00d4ff" stroke-width="2"/>
+<path d="M370,29 Q386,45 370,61" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M410,29 Q394,45 410,61" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="390" y="53" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">Delta</text>
+<line x1="410" y1="45" x2="590" y2="45" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="75" x2="80" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="60" x2="80" y2="90" stroke="#00d4ff" stroke-width="2"/>
+<line x1="110" y1="70" x2="80" y2="80" stroke="#ff6b35" stroke-width="2"/>
+<line x1="120" y1="60" x2="120" y2="90" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="100" text-anchor="middle" fill="#ff6b35" font-size="9" font-family="monospace">StopBtn</text>
+<line x1="120" y1="75" x2="190" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<rect x="190" y="60" width="120" height="30" rx="3" fill="none" stroke="#ff6b35" stroke-width="1.5"/>
+<text x="250" y="80" text-anchor="middle" fill="#ff6b35" font-size="8" font-family="monospace">State:=0</text>
+<line x1="310" y1="75" x2="590" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">StartBtn→State(CASE)→Star/Delta；StopBtn(/)→State:=0</text>`},
       {title:'数据记录 FIFO (ST)',tags:['数据处理','ST','高级'],lang:'iecst',code:`// FIFO 队列 - 环形缓冲区
 VAR
     Buffer : ARRAY[0..99] OF REAL;
@@ -150,7 +283,29 @@ FUNCTION PopFIFO : REAL
         Tail := (Tail + 1) MOD 100;
         Count := Count - 1;
     END_IF;
-END_FUNCTION`},
+END_FUNCTION`,ladder:`<line x1="10" y1="10" x2="10" y2="110" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="10" x2="590" y2="110" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="35" x2="80" y2="35" stroke="#00d4ff" stroke-width="2"/>
+<rect x="80" y="15" width="200" height="40" rx="3" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="180" y="32" text-anchor="middle" fill="#ff6b35" font-size="9" font-weight="bold" font-family="monospace">PushFIFO</text>
+<text x="100" y="48" fill="#aaa" font-size="7" font-family="monospace">Value</text>
+<text x="160" y="48" fill="#aaa" font-size="7" font-family="monospace">Buffer[Head]</text>
+<text x="245" y="35" fill="#aaa" font-size="7" font-family="monospace">→</text>
+<line x1="280" y1="35" x2="340" y2="35" stroke="#00d4ff" stroke-width="2"/>
+<rect x="340" y="15" width="110" height="40" rx="3" fill="none" stroke="#00d4ff" stroke-width="1.5"/>
+<text x="395" y="32" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">Buffer[0..99]</text>
+<text x="395" y="48" text-anchor="middle" fill="#aaa" font-size="7" font-family="monospace">Ring Buffer</text>
+<line x1="450" y1="35" x2="590" y2="35" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="75" x2="80" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<rect x="80" y="55" width="200" height="40" rx="3" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="180" y="72" text-anchor="middle" fill="#ff6b35" font-size="9" font-weight="bold" font-family="monospace">PopFIFO</text>
+<text x="100" y="88" fill="#aaa" font-size="7" font-family="monospace">Buffer[Tail]</text>
+<text x="200" y="88" fill="#aaa" font-size="7" font-family="monospace">→ Value</text>
+<line x1="280" y1="75" x2="340" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<rect x="340" y="55" width="110" height="40" rx="3" fill="none" stroke="#00d4ff" stroke-width="1.5"/>
+<text x="395" y="72" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">Count>0?</text>
+<text x="395" y="88" text-anchor="middle" fill="#aaa" font-size="7" font-family="monospace">Head/Tail</text>
+<line x1="450" y1="75" x2="590" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">PushFIFO(Value) → Buffer；PopFIFO ← Buffer[Tail]</text>`},
       {title:'RS485 通信轮询 (ST)',tags:['通信','ST','Modbus'],lang:'iecst',code:`// Modbus RTU 主站轮询状态机
 VAR
     PollState : INT := 0;
@@ -179,7 +334,36 @@ CASE PollState OF
         ProcessData();
         WaitTimer(IN := TRUE, PT := T#50MS);
         IF WaitTimer.Q THEN PollState := 0; END_IF;
-END_CASE;`},
+END_CASE;`,ladder:`<line x1="10" y1="10" x2="10" y2="110" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="10" x2="590" y2="110" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="30" x2="80" y2="30" stroke="#00d4ff" stroke-width="2"/>
+<rect x="80" y="12" width="180" height="36" rx="3" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="170" y="28" text-anchor="middle" fill="#ff6b35" font-size="9" font-weight="bold" font-family="monospace">SendReadRequest</text>
+<text x="170" y="42" text-anchor="middle" fill="#aaa" font-size="7" font-family="monospace">SlaveID,Addr,NumRegs</text>
+<line x1="260" y1="30" x2="310" y2="30" stroke="#00d4ff" stroke-width="2"/>
+<rect x="310" y="12" width="90" height="36" rx="3" fill="none" stroke="#ff6b35" stroke-width="1.5"/>
+<text x="355" y="28" text-anchor="middle" fill="#ff6b35" font-size="8" font-family="monospace">CommTimer</text>
+<text x="355" y="42" text-anchor="middle" fill="#aaa" font-size="7" font-family="monospace">TON 1S</text>
+<line x1="400" y1="30" x2="440" y2="30" stroke="#00d4ff" stroke-width="2"/>
+<text x="455" y="26" fill="#00d4ff" font-size="8" font-family="monospace">State=1</text>
+<text x="455" y="40" fill="#aaa" font-size="7" font-family="monospace">→等待</text>
+<line x1="440" y1="30" x2="590" y2="30" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="65" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="50" x2="80" y2="80" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="50" x2="120" y2="80" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="45" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">Resp?</text>
+<line x1="120" y1="55" x2="190" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<rect x="190" y="42" width="120" height="26" rx="3" fill="none" stroke="#00d4ff" stroke-width="1.5"/>
+<text x="250" y="59" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">ParseResponse</text>
+<line x1="310" y1="55" x2="370" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<text x="385" y="51" fill="#00d4ff" font-size="8" font-family="monospace">State=2</text>
+<text x="385" y="63" fill="#aaa" font-size="7" font-family="monospace">→处理</text>
+<line x1="370" y1="55" x2="590" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<line x1="120" y1="75" x2="190" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<rect x="190" y="68" width="100" height="20" rx="2" fill="none" stroke="#ff6b35" stroke-width="1"/>
+<text x="240" y="82" text-anchor="middle" fill="#ff6b35" font-size="7" font-family="monospace">Timeout?</text>
+<line x1="290" y1="75" x2="370" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<text x="385" y="75" fill="#ff6b35" font-size="7" font-family="monospace">→State=0</text>
+<line x1="370" y1="75" x2="590" y2="75" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">PollState机：0:SendReq→1:WaitResp→2:Process→0</text>`},
       {title:'西门子 SCL 边沿检测',tags:['西门子','SCL','基础'],lang:'iecst',code:`// 上升沿检测 (SCL)
 VAR
     InputSignal : BOOL;
@@ -191,7 +375,25 @@ RisingEdge := InputSignal AND NOT PrevState;
 PrevState := InputSignal;
 
 // 下降沿检测
-// FallingEdge := NOT InputSignal AND PrevState;`},
+// FallingEdge := NOT InputSignal AND PrevState;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="55" x2="80" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<line x1="80" y1="40" x2="80" y2="70" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="40" x2="120" y2="70" stroke="#00d4ff" stroke-width="2"/>
+<text x="100" y="33" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">InputSignal</text>
+<line x1="120" y1="55" x2="200" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<line x1="200" y1="40" x2="200" y2="70" stroke="#00d4ff" stroke-width="2"/>
+<line x1="178" y1="65" x2="200" y2="45" stroke="#ff6b35" stroke-width="2"/>
+<line x1="240" y1="40" x2="240" y2="70" stroke="#00d4ff" stroke-width="2"/>
+<text x="220" y="33" text-anchor="middle" fill="#ff6b35" font-size="9" font-family="monospace">PrevState(/)</text>
+<line x1="240" y1="55" x2="370" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<text x="310" y="45" text-anchor="middle" fill="#888" font-size="8" font-family="monospace">AND</text>
+<path d="M370,39 Q386,55 370,71" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M410,39 Q394,55 410,71" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="390" y="59" text-anchor="middle" fill="#00d4ff" font-size="9" font-family="monospace">RE</text>
+<line x1="410" y1="55" x2="590" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<text x="470" y="50" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">RisingEdge</text>
+<line x1="10" y1="88" x2="100" y2="88" stroke="#00d4ff" stroke-width="2"/>
+<text x="150" y="84" fill="#888" font-size="8" font-family="monospace">PrevState := InputSignal</text>
+<line x1="280" y1="88" x2="590" y2="88" stroke="#00d4ff" stroke-width="2"/>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">InputSignal —| |— AND PrevState —|/|— → RisingEdge</text>`},
       {title:'三菱 ST 比较范围',tags:['三菱','ST','基础'],lang:'iecst',code:`// 数值范围判断
 // 判断温度是否在正常范围内
 VAR
@@ -205,7 +407,30 @@ END_VAR
 
 InRange := (Temperature >= LowLimit) AND (Temperature <= HighLimit);
 HighAlarm := Temperature > HighLimit;
-LowAlarm := Temperature < LowLimit;`},
+LowAlarm := Temperature < LowLimit;`,ladder:`<line x1="10" y1="10" x2="10" y2="110" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="10" x2="590" y2="110" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="30" x2="80" y2="30" stroke="#00d4ff" stroke-width="2"/>
+<rect x="80" y="12" width="160" height="36" rx="3" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="160" y="28" text-anchor="middle" fill="#ff6b35" font-size="9" font-weight="bold" font-family="monospace">CMP</text>
+<text x="160" y="42" text-anchor="middle" fill="#aaa" font-size="7" font-family="monospace">Temperature</text>
+<line x1="240" y1="22" x2="310" y2="22" stroke="#00d4ff" stroke-width="2"/>
+<line x1="240" y1="30" x2="310" y2="30" stroke="#00d4ff" stroke-width="2"/>
+<line x1="240" y1="38" x2="310" y2="38" stroke="#00d4ff" stroke-width="2"/>
+<path d="M310,16 Q324,30 310,44" fill="none" stroke="#00d4ff" stroke-width="2"/><path d="M346,16 Q332,30 346,44" fill="none" stroke="#00d4ff" stroke-width="2"/>
+<text x="328" y="26" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">OK</text>
+<line x1="346" y1="30" x2="590" y2="30" stroke="#00d4ff" stroke-width="2"/>
+<text x="470" y="26" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">InRange</text>
+<path d="M310,20 Q328,38 310,50" fill="none" stroke="#ff6b35" stroke-width="1.5"/><path d="M346,20 Q330,38 346,50" fill="none" stroke="#ff6b35" stroke-width="1.5"/>
+<text x="328" y="44" text-anchor="middle" fill="#ff6b35" font-size="7" font-family="monospace">HI</text>
+<text x="470" y="42" text-anchor="middle" fill="#ff6b35" font-size="8" font-family="monospace">HighAlarm</text>
+<line x1="10" y1="65" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<text x="85" y="62" fill="#888" font-size="8" font-family="monospace">≥ 10.0</text>
+<text x="85" y="75" fill="#888" font-size="8" font-family="monospace">≤ 50.0</text>
+<line x1="200" y1="65" x2="310" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<path d="M310,55 Q324,65 310,75" fill="none" stroke="#ff6b35" stroke-width="1.5"/><path d="M346,55 Q332,65 346,75" fill="none" stroke="#ff6b35" stroke-width="1.5"/>
+<text x="328" y="69" text-anchor="middle" fill="#ff6b35" font-size="7" font-family="monospace">LO</text>
+<line x1="346" y1="65" x2="590" y2="65" stroke="#00d4ff" stroke-width="2"/>
+<text x="470" y="61" text-anchor="middle" fill="#ff6b35" font-size="8" font-family="monospace">LowAlarm</text>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">Temperature → [CMP ≥10 ≤50] → InRange / HighAlarm / LowAlarm</text>`},
       {title:'模拟量滤波 - 移动平均',tags:['模拟量','ST','滤波'],lang:'iecst',code:`// 一阶滞后滤波 (指数移动平均)
 // Alpha 越大响应越快，越小越平滑
 VAR
@@ -220,7 +445,24 @@ IF FirstRun THEN
     FirstRun := FALSE;
 ELSE
     FilteredValue := Alpha * RawValue + (1.0 - Alpha) * FilteredValue;
-END_IF;`},
+END_IF;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+<line x1="10" y1="55" x2="80" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<rect x="80" y="20" width="420" height="70" rx="4" fill="rgba(255,107,53,0.06)" stroke="#ff6b35" stroke-width="2"/>
+<text x="290" y="38" text-anchor="middle" fill="#ff6b35" font-size="10" font-weight="bold" font-family="monospace">EMA Filter</text>
+<line x1="80" y1="44" x2="500" y2="44" stroke="#ff6b35" stroke-width="0.5" stroke-dasharray="3"/>
+<text x="110" y="60" fill="#aaa" font-size="8" font-family="monospace">Alpha</text>
+<text x="180" y="60" fill="#aaa" font-size="8" font-family="monospace">RawValue</text>
+<text x="280" y="60" fill="#aaa" font-size="8" font-family="monospace">Prev</text>
+<text x="350" y="60" fill="#aaa" font-size="8" font-family="monospace">FirstRun?</text>
+<text x="440" y="60" fill="#aaa" font-size="8" font-family="monospace">OUT</text>
+<text x="110" y="82" fill="#00d4ff" font-size="7" font-family="monospace">0.1</text>
+<text x="185" y="82" fill="#00d4ff" font-size="7" font-family="monospace">REAL</text>
+<text x="270" y="82" fill="#00d4ff" font-size="7" font-family="monospace">FilteredValue</text>
+<text x="355" y="82" fill="#00d4ff" font-size="7" font-family="monospace">INIT→Raw</text>
+<text x="430" y="82" fill="#00d4ff" font-size="7" font-family="monospace">α·Raw+(1-α)·Prev</text>
+<line x1="500" y1="55" x2="590" y2="55" stroke="#00d4ff" stroke-width="2"/>
+<text x="545" y="50" text-anchor="middle" fill="#00d4ff" font-size="8" font-family="monospace">Filtered</text>
+<text x="300" y="118" text-anchor="middle" fill="#556" font-size="8">Alpha(0.1) + RawValue → [EMA] → FilteredValue</text>`},
     ];
     let activeTag='';
     function renderTags(){
@@ -246,6 +488,7 @@ END_IF;`},
             ${s.title}
             ${s.tags.map(t=>`<span class="badge badge-primary">${t}</span>`).join(' ')}
           </div>
+          ${s.ladder?`<div class="ladder-diagram" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:8px;overflow-x:auto;"><svg viewBox="0 0 600 120" style="width:100%;min-width:400px;">${s.ladder}</svg></div>`:''}
           <div class="snippet" style="position:relative;">${escapeHtml(s.code)}<button class="copy-btn" onclick="copyText(this.parentElement.textContent.replace('复制','').trim(),this)" style="position:absolute;top:8px;right:8px;">复制</button></div>
         </div>
       `).join('');
