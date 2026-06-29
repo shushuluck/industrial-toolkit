@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>接线颜色编码器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    .color-swatch{display:inline-block;width:24px;height:24px;border-radius:4px;vertical-align:middle;margin-right:8px;border:1px solid var(--border);}
+    .wire-row{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);}
+    .wire-row:hover{background:rgba(0,212,255,0.03);}
+    .wire-row .code{font-family:var(--mono);min-width:80px;font-weight:600;}
+    .wire-row .name{flex:1;color:var(--text-dim);}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>🎨 接线颜色编码器</h2><p>线号↔颜色双向查询，支持 GB 和 IEC 标准</p></div>
+    <div class="card">
+      <div class="search-box"><input type="text" id="search" placeholder="输入线号或颜色名称搜索..." oninput="filterWires()"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔌 三相电源线 (GB/T 6995 / IEC 60446)</div>
+      <div id="wires-power"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎛 控制回路线</div>
+      <div id="wires-control"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🌐 国际标准对照</div>
+      <table>
+        <tr><th>用途</th><th>中国 GB</th><th>IEC</th><th>美国 NEC</th><th>颜色</th></tr>
+        <tr><td>L1 相线</td><td>黄</td><td>棕 Brown</td><td>黑 Black</td><td><span class="color-swatch" style="background:#FFD700;"></span>/<span class="color-swatch" style="background:#8B4513;"></span>/<span class="color-swatch" style="background:#333;"></span></td></tr>
+        <tr><td>L2 相线</td><td>绿</td><td>黑 Black</td><td>红 Red</td><td><span class="color-swatch" style="background:#228B22;"></span>/<span class="color-swatch" style="background:#333;"></span>/<span class="color-swatch" style="background:#CC0000;"></span></td></tr>
+        <tr><td>L3 相线</td><td>红</td><td>灰 Grey</td><td>蓝 Blue</td><td><span class="color-swatch" style="background:#CC0000;"></span>/<span class="color-swatch" style="background:#808080;"></span>/<span class="color-swatch" style="background:#0066CC;"></span></td></tr>
+        <tr><td>N 中性线</td><td>淡蓝</td><td>蓝 Blue</td><td>白 White</td><td><span class="color-swatch" style="background:#87CEEB;"></span>/<span class="color-swatch" style="background:#0066CC;"></span>/<span class="color-swatch" style="background:#F5F5F5;"></span></td></tr>
+        <tr><td>PE 保护接地</td><td>黄绿</td><td>黄绿</td><td>绿 Green</td><td><span class="color-swatch" style="background:linear-gradient(90deg,#FFD700 50%,#228B22 50%);"></span>/<span class="color-swatch" style="background:#006600;"></span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — 接线颜色编码器</div>
+  <script src="../js/common.js"></script>
+  <script>
+    const wires=[
+      {code:'L1',name:'相线 A (U)',color:'#FFD700',colorName:'黄色',group:'power',std:'GB'},
+      {code:'L2',name:'相线 B (V)',color:'#228B22',colorName:'绿色',group:'power',std:'GB'},
+      {code:'L3',name:'相线 C (W)',color:'#CC0000',colorName:'红色',group:'power',std:'GB'},
+      {code:'N',name:'中性线',color:'#87CEEB',colorName:'淡蓝色',group:'power',std:'GB/IEC'},
+      {code:'PE',name:'保护接地',color:'linear-gradient(90deg,#FFD700 50%,#228B22 50%)',colorName:'黄绿色',group:'power',std:'GB/IEC'},
+      {code:'DC+',name:'直流正极',color:'#CC0000',colorName:'红色',group:'control',std:'通用'},
+      {code:'DC-',name:'直流负极',color:'#333333',colorName:'黑色',group:'control',std:'通用'},
+      {code:'DC24+',name:'24V 正极',color:'#CC0000',colorName:'棕色',group:'control',std:'IEC'},
+      {code:'DC0V',name:'24V 负极/0V',color:'#0066CC',colorName:'蓝色',group:'control',std:'IEC'},
+      {code:'A1',name:'PLC 输出公共端',color:'#FF6B35',colorName:'橙色',group:'control',std:'常用'},
+      {code:'A2',name:'PLC 输入公共端',color:'#9370DB',colorName:'紫色',group:'control',std:'常用'},
+      {code:'S+',name:'正信号',color:'#CC0000',colorName:'红色',group:'control',std:'通用'},
+      {code:'S-',name:'负信号',color:'#87CEEB',colorName:'白色',group:'control',std:'通用'},
+      {code:'SH',name:'屏蔽层',color:'#808080',colorName:'灰色',group:'control',std:'通用'},
+    ];
+    function renderWires(list,containerId){
+      let html=list.map(w=>`<div class="wire-row" data-search="${w.code} ${w.name} ${w.colorName} ${w.std}">
+        <span class="color-swatch" style="background:${w.color};"></span>
+        <span class="code">${w.code}</span>
+        <span class="name">${w.name} <span style="color:var(--text-muted);font-size:12px;">[${w.std}]</span></span>
+        <span style="color:var(--text-dim);font-size:13px;">${w.colorName}</span>
+      </div>`).join('');
+      document.getElementById(containerId).innerHTML=html;
+    }
+    function filterWires(){
+      let q=document.getElementById('search').value.toLowerCase();
+      document.querySelectorAll('.wire-row').forEach(r=>{
+        r.style.display=r.dataset.search.toLowerCase().includes(q)?'flex':'none';
+      });
+    }
+    renderWires(wires.filter(w=>w.group==='power'),'wires-power');
+    renderWires(wires.filter(w=>w.group==='control'),'wires-control');
+  </script>
+</body>
+</html>

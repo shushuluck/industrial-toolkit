@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>串口通信模拟器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>.frame{font-family:var(--mono);font-size:14px;line-height:2;}.byte{display:inline-block;padding:2px 6px;margin:1px;border-radius:3px;}.byte-addr{background:rgba(0,212,255,0.15);color:var(--primary);}.byte-func{background:rgba(255,107,53,0.15);color:var(--accent);}.byte-data{background:rgba(0,230,118,0.15);color:var(--success);}.byte-crc{background:rgba(255,193,7,0.15);color:var(--warn);}.byte-error{background:rgba(255,82,82,0.15);color:var(--danger);}</style>
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>📡 串口通信模拟器</h2><p>Modbus RTU / TCP 报文构造、解析、CRC 校验</p></div>
+
+    <div class="card">
+      <div class="card-title">🔧 报文构造器</div>
+      <div class="input-group">
+        <label>协议：</label>
+        <select id="protocol" onchange="buildFrame()">
+          <option value="rtu">Modbus RTU</option>
+          <option value="tcp">Modbus TCP</option>
+        </select>
+        <label style="margin-left:12px;">功能码：</label>
+        <select id="funcCode" onchange="updateFuncDesc();buildFrame()">
+          <option value="01">01 - 读线圈 (Read Coils)</option>
+          <option value="02">02 - 读离散输入 (Read Discrete Inputs)</option>
+          <option value="03" selected>03 - 读保持寄存器 (Read Holding Registers)</option>
+          <option value="04">04 - 读输入寄存器 (Read Input Registers)</option>
+          <option value="05">05 - 写单个线圈 (Write Single Coil)</option>
+          <option value="06">06 - 写单个寄存器 (Write Single Register)</option>
+          <option value="0F">0F - 写多个线圈 (Write Multiple Coils)</option>
+          <option value="10">10 - 写多个寄存器 (Write Multiple Registers)</option>
+        </select>
+      </div>
+      <div id="funcDesc" style="color:var(--text-dim);font-size:12px;margin-left:68px;margin-bottom:12px;">读取从站的保持寄存器数据</div>
+      <div class="input-group">
+        <label>从站ID：</label><input type="number" id="slaveId" value="1" min="1" max="247" style="width:80px;" oninput="buildFrame()">
+        <label style="margin-left:12px;">起始地址：</label><input type="text" id="startAddr" value="0000" maxlength="4" style="width:80px;" oninput="buildFrame()">
+        <label style="margin-left:12px;">数量/值：</label><input type="text" id="quantity" value="000A" maxlength="4" style="width:80px;" oninput="buildFrame()">
+      </div>
+      <div id="writeFields" style="display:none;">
+        <div class="input-group">
+          <label>写入数据：</label><input type="text" id="writeData" value="" placeholder="HEX，空格分隔" style="flex:1;" oninput="buildFrame()">
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📤 请求帧 (Request)</div>
+        <div class="frame" id="reqFrame"></div>
+        <div style="margin-top:8px;">
+          <span class="badge badge-primary">地址</span>
+          <span class="badge badge-accent">功能码</span>
+          <span class="badge badge-success">数据</span>
+          <span class="badge badge-warn">CRC</span>
+        </div>
+        <div class="result-box" id="reqHex" style="margin-top:8px;font-size:13px;"><button class="copy-btn" onclick="copyText(document.getElementById('reqHex').textContent,this)">复制</button></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📥 响应帧 (Response)</div>
+        <div class="frame" id="respFrame"></div>
+        <div class="result-box" id="respHex" style="margin-top:8px;font-size:13px;"><button class="copy-btn" onclick="copyText(document.getElementById('respHex').textContent,this)">复制</button></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔍 报文解析器</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:8px;">粘贴收到的原始报文，自动解析各字段含义</p>
+      <textarea id="parseInput" rows="3" placeholder="粘贴 HEX 报文，如: 01 03 00 00 00 0A C5 CD" oninput="parseFrame()"></textarea>
+      <div id="parseResult" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 功能码速查</div>
+      <table>
+        <tr><th>功能码</th><th>名称</th><th>方向</th><th>数据格式</th></tr>
+        <tr><td>01</td><td>读线圈</td><td>主→从</td><td>起始地址(2B) + 数量(2B)</td></tr>
+        <tr><td>02</td><td>读离散输入</td><td>主→从</td><td>起始地址(2B) + 数量(2B)</td></tr>
+        <tr><td>03</td><td>读保持寄存器</td><td>主→从</td><td>起始地址(2B) + 数量(2B)</td></tr>
+        <tr><td>04</td><td>读输入寄存器</td><td>主→从</td><td>起始地址(2B) + 数量(2B)</td></tr>
+        <tr><td>05</td><td>写单线圈</td><td>主→从</td><td>地址(2B) + FF00/0000</td></tr>
+        <tr><td>06</td><td>写单寄存器</td><td>主→从</td><td>地址(2B) + 值(2B)</td></tr>
+        <tr><td>0F</td><td>写多线圈</td><td>主→从</td><td>起始(2B)+数量(2B)+字节数+数据</td></tr>
+        <tr><td>10</td><td>写多寄存器</td><td>主→从</td><td>起始(2B)+数量(2B)+字节数+数据</td></tr>
+        <tr><td>83/84</td><td>异常响应</td><td>从→主</td><td>功能码|0x80 + 异常码(1B)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — 串口通信模拟器</div>
+  <script src="../js/common.js"></script>
+  <script>
+    const funcDescs={'01':'读取从站线圈状态 (DO)','02':'读取从站离散输入状态 (DI)','03':'读取从站保持寄存器数据','04':'读取从站输入寄存器数据','05':'强制单个线圈 ON/OFF','06':'预置单个保持寄存器值','0F':'强制多个线圈 ON/OFF','10':'预置多个保持寄存器值'};
+    function updateFuncDesc(){document.getElementById('funcDesc').textContent=funcDescs[document.getElementById('funcCode').value]||'';}
+    function crc16Modbus(bytes){let crc=0xFFFF;for(let b of bytes){crc^=b;for(let i=0;i<8;i++)crc=crc&1?(crc>>1)^0xA001:crc>>1;}return crc;}
+    function toHex(n,pad=2){return n.toString(16).toUpperCase().padStart(pad,'0');}
+    function buildFrame(){
+      let proto=document.getElementById('protocol').value;
+      let fc=document.getElementById('funcCode').value;
+      let slave=parseInt(document.getElementById('slaveId').value)||1;
+      let addr=parseInt(document.getElementById('startAddr').value,16)||0;
+      let qty=parseInt(document.getElementById('quantity').value,16)||1;
+      let isWrite=['05','06','0F','10'].includes(fc);
+      document.getElementById('writeFields').style.display=isWrite?'block':'none';
+      let data=[];
+      if(fc==='05'){data=[addr>>8&0xFF,addr&0xFF,qty===0xFF?0xFF:0x00,qty===0xFF?0xFF:0x00];}
+      else if(fc==='06'){data=[addr>>8&0xFF,addr&0xFF,qty>>8&0xFF,qty&0xFF];}
+      else{data=[addr>>8&0xFF,addr&0xFF,qty>>8&0xFF,qty&0xFF];}
+      let pdu=[slave,parseInt(fc,16),...data];
+      let crc=crc16Modbus(pdu);
+      let rtuFrame=[...pdu,crc&0xFF,(crc>>8)&0xFF];
+      let frameHtml=rtuFrame.map((b,i)=>{
+        let cls=i===0?'byte-addr':i===1?'byte-func':i>=rtuFrame.length-2?'byte-crc':'byte-data';
+        return `<span class="byte ${cls}">${toHex(b)}</span>`;
+      }).join(' ');
+      document.getElementById('reqFrame').innerHTML=frameHtml;
+      document.getElementById('reqHex').textContent=rtuFrame.map(b=>toHex(b)).join(' ');
+      let resp=[];
+      if(['01','02','03','04'].includes(fc)){
+        let byteCount=fc==='01'||fc==='02'?Math.ceil(qty/8):qty*2;
+        let respData=new Array(byteCount).fill(0);
+        resp=[slave,parseInt(fc,16),byteCount,...respData];
+      } else {
+        resp=[slave,parseInt(fc,16),...data];
+      }
+      let respCrc=crc16Modbus(resp);
+      let respFrame=[...resp,respCrc&0xFF,(respCrc>>8)&0xFF];
+      let respHtml=respFrame.map((b,i)=>{
+        let cls=i===0?'byte-addr':i===1?'byte-func':i>=respFrame.length-2?'byte-crc':'byte-data';
+        return `<span class="byte ${cls}">${toHex(b)}</span>`;
+      }).join(' ');
+      document.getElementById('respFrame').innerHTML=respHtml;
+      document.getElementById('respHex').textContent=respFrame.map(b=>toHex(b)).join(' ');
+    }
+    function parseFrame(){
+      let raw=document.getElementById('parseInput').value.trim();
+      if(!raw){document.getElementById('parseResult').innerHTML='';return;}
+      let bytes=raw.split(/[\s,;]+/).filter(s=>s).map(s=>parseInt(s,16));
+      if(bytes.length<4){document.getElementById('parseResult').innerHTML='<div style="color:var(--danger);">帧太短，最少4字节</div>';return;}
+      let slave=bytes[0],fc=bytes[1];
+      let isException=fc>0x80;
+      let html='<table>';
+      html+=`<tr><td style="color:var(--text-dim);width:120px;">从站地址</td><td style="font-family:var(--mono);">0x${toHex(slave)} (${slave})</td></tr>`;
+      if(isException){
+        html+=`<tr><td style="color:var(--danger);">异常功能码</td><td style="font-family:var(--mono);">0x${toHex(fc)}</td></tr>`;
+        let excCodes={1:'非法功能码',2:'非法数据地址',3:'非法数据值',4:'从站设备故障',5:'确认(长时处理)',6:'从站设备忙',8:'存储奇偶性差错',10:'不可用网关路径',11:'网关目标设备无响应'};
+        let exc=bytes[2]||0;
+        html+=`<tr><td style="color:var(--danger);">异常码</td><td style="font-family:var(--mono);">0x${toHex(exc)} - ${excCodes[exc]||'未知'}</td></tr>`;
+      } else {
+        html+=`<tr><td style="color:var(--text-dim);">功能码</td><td style="font-family:var(--mono);">0x${toHex(fc)} - ${funcDescs[toHex(fc)]||'未知'}</td></tr>`;
+        if(['01','02','03','04'].includes(toHex(fc))&&bytes.length>2){
+          html+=`<tr><td style="color:var(--text-dim);">字节数</td><td style="font-family:var(--mono);">${bytes[2]}</td></tr>`;
+          let dataBytes=bytes.slice(3,3+bytes[2]);
+          if(fc>=3){
+            let regs=[];for(let i=0;i<dataBytes.length-1;i+=2)regs.push((dataBytes[i]<<8|dataBytes[i+1]));
+            html+=`<tr><td style="color:var(--text-dim);">寄存器值</td><td style="font-family:var(--mono);">${regs.map((r,i)=>`[${i}]=0x${toHex(r,4)} (${r})`).join('  ')}</td></tr>`;
+          }
+        } else if(bytes.length>=6){
+          let addr=(bytes[2]<<8)|bytes[3];
+          let val=(bytes[4]<<8)|bytes[5];
+          html+=`<tr><td style="color:var(--text-dim);">起始地址</td><td style="font-family:var(--mono);">0x${toHex(addr,4)} (${addr})</td></tr>`;
+          html+=`<tr><td style="color:var(--text-dim);">数量/值</td><td style="font-family:var(--mono);">0x${toHex(val,4)} (${val})</td></tr>`;
+        }
+      }
+      let frameCrc=bytes.slice(-2);let calcCrc=crc16Modbus(bytes.slice(0,-2));
+      let crcOk=frameCrc[0]===(calcCrc&0xFF)&&frameCrc[1]===(calcCrc>>8)&0xFF;
+      html+=`<tr><td style="color:var(--text-dim);">CRC</td><td style="font-family:var(--mono);">${crcOk?'<span style="color:var(--success);">✓ 校验通过</span>':'<span style="color:var(--danger);">✗ 校验失败</span>'}</td></tr>`;
+      html+='</table>';
+      document.getElementById('parseResult').innerHTML=html;
+    }
+    buildFrame();
+  </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRC计算器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>🔐 CRC 计算器</h2><p>CRC-16/Modbus / CRC-16/CCITT / CRC-32 在线计算</p></div>
+    <div class="card">
+      <div class="card-title">📝 输入数据</div>
+      <div class="input-group">
+        <label>模式：</label>
+        <select id="inputMode" onchange="toggleMode()">
+          <option value="hex">HEX 字节</option><option value="ascii">ASCII 字符串</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>数据：</label>
+        <input type="text" id="inputData" placeholder="如: 01 03 00 00 00 0A (HEX模式)" style="flex:1;" oninput="calcCRC()">
+      </div>
+      <div id="asciiHint" style="display:none;color:var(--text-dim);font-size:12px;margin-left:68px;">直接输入ASCII字符串，如 "Hello"</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 计算结果</div>
+      <table>
+        <tr>
+          <th style="width:180px;">算法</th><th>结果 (HEX)</th><th style="width:120px;">十进制</th><th style="width:80px;">字节序</th>
+        </tr>
+        <tr>
+          <td>CRC-16/Modbus</td>
+          <td><div class="result-box" id="r-modbus"><button class="copy-btn" onclick="copyText(document.getElementById('r-modbus').textContent,this)">复制</button></div></td>
+          <td id="r-modbus-dec" style="font-family:var(--mono);"></td>
+          <td id="r-modbus-order" style="font-family:var(--mono);font-size:12px;"></td>
+        </tr>
+        <tr>
+          <td>CRC-16/CCITT</td>
+          <td><div class="result-box" id="r-ccitt"><button class="copy-btn" onclick="copyText(document.getElementById('r-ccitt').textContent,this)">复制</button></div></td>
+          <td id="r-ccitt-dec" style="font-family:var(--mono);"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>CRC-16/XMODEM</td>
+          <td><div class="result-box" id="r-xmodem"><button class="copy-btn" onclick="copyText(document.getElementById('r-xmodem').textContent,this)">复制</button></div></td>
+          <td id="r-xmodem-dec" style="font-family:var(--mono);"></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>CRC-32</td>
+          <td><div class="result-box" id="r-crc32"><button class="copy-btn" onclick="copyText(document.getElementById('r-crc32').textContent,this)">复制</button></div></td>
+          <td id="r-crc32-dec" style="font-family:var(--mono);"></td>
+          <td></td>
+        </tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">📦 完整 Modbus RTU 帧</div>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:8px;">输入数据 + CRC-16/Modbus 低字节在前的完整帧</p>
+      <div class="result-box highlight" id="r-fullframe"><button class="copy-btn" onclick="copyText(document.getElementById('r-fullframe').textContent,this)">复制</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">ℹ️ 常用 CRC 算法参数</div>
+      <table>
+        <tr><th>算法</th><th>多项式</th><th>初始值</th><th>输入反转</th><th>输出反转</th><th>异或值</th></tr>
+        <tr><td>CRC-16/Modbus</td><td>0x8005</td><td>0xFFFF</td><td>Yes</td><td>Yes</td><td>0x0000</td></tr>
+        <tr><td>CRC-16/CCITT</td><td>0x1021</td><td>0xFFFF</td><td>No</td><td>No</td><td>0x0000</td></tr>
+        <tr><td>CRC-16/XMODEM</td><td>0x1021</td><td>0x0000</td><td>No</td><td>No</td><td>0x0000</td></tr>
+        <tr><td>CRC-32</td><td>0x04C11DB7</td><td>0xFFFFFFFF</td><td>Yes</td><td>Yes</td><td>0xFFFFFFFF</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — CRC 计算器</div>
+  <script src="../js/common.js"></script>
+  <script>
+    function toggleMode(){let m=document.getElementById('inputMode').value;document.getElementById('asciiHint').style.display=m==='ascii'?'block':'none';document.getElementById('inputData').placeholder=m==='hex'?'如: 01 03 00 00 00 0A':'如: Hello';calcCRC();}
+    function getBytes(){
+      let mode=document.getElementById('inputMode').value;
+      let raw=document.getElementById('inputData').value.trim();
+      if(!raw)return[];
+      if(mode==='ascii')return Array.from(raw).map(c=>c.charCodeAt(0));
+      return raw.split(/[\s,;]+/).filter(s=>s).map(s=>parseInt(s,16)).filter(n=>!isNaN(n)&&n>=0&&n<=255);
+    }
+    function crc16(bytes,poly,init,refIn,refOut,xorOut){
+      let crc=init;
+      for(let byte of bytes){
+        if(refIn){byte=reverseBits(byte,8);}
+        crc^=(byte<<8);
+        for(let i=0;i<8;i++){
+          if(crc&0x8000)crc=((crc<<1)^poly)&0xFFFF;
+          else crc=(crc<<1)&0xFFFF;
+        }
+      }
+      if(refOut)crc=reverseBits(crc,16);
+      return(crc^xorOut)&0xFFFF;
+    }
+    function reverseBits(n,bits){let r=0;for(let i=0;i<bits;i++){r=(r<<1)|(n&1);n>>=1;}return r;}
+    function crc32(bytes){
+      let table=[];
+      for(let i=0;i<256;i++){
+        let c=i;
+        for(let j=0;j<8;j++)c=c&1?0xEDB88320^(c>>>1):c>>>1;
+        table[i]=c;
+      }
+      let crc=0xFFFFFFFF;
+      for(let b of bytes)crc=table[(crc^b)&0xFF]^(crc>>>8);
+      return(crc^0xFFFFFFFF)>>>0;
+    }
+    function calcCRC(){
+      let bytes=getBytes();
+      if(!bytes.length){['r-modbus','r-ccitt','r-xmodem','r-crc32','r-fullframe'].forEach(id=>document.getElementById(id).textContent='');return;}
+      let modbus=crc16(bytes,0x8005,0xFFFF,true,true,0x0000);
+      let ccitt=crc16(bytes,0x1021,0xFFFF,false,false,0x0000);
+      let xmodem=crc16(bytes,0x1021,0x0000,false,false,0x0000);
+      let c32=crc32(bytes);
+      let modHex='0x'+modbus.toString(16).toUpperCase().padStart(4,'0');
+      document.getElementById('r-modbus').textContent=modHex;
+      document.getElementById('r-modbus-dec').textContent=modbus;
+      let lo=modbus&0xFF,hi=(modbus>>8)&0xFF;
+      document.getElementById('r-modbus-order').textContent=lo.toString(16).toUpperCase().padStart(2,'0')+' '+hi.toString(16).toUpperCase().padStart(2,'0');
+      document.getElementById('r-ccitt').textContent='0x'+ccitt.toString(16).toUpperCase().padStart(4,'0');
+      document.getElementById('r-ccitt-dec').textContent=ccitt;
+      document.getElementById('r-xmodem').textContent='0x'+xmodem.toString(16).toUpperCase().padStart(4,'0');
+      document.getElementById('r-xmodem-dec').textContent=xmodem;
+      document.getElementById('r-crc32').textContent='0x'+c32.toString(16).toUpperCase().padStart(8,'0');
+      document.getElementById('r-crc32-dec').textContent=c32;
+      let raw=document.getElementById('inputData').value.trim();
+      document.getElementById('r-fullframe').textContent=raw+' '+lo.toString(16).toUpperCase().padStart(2,'0')+' '+hi.toString(16).toUpperCase().padStart(2,'0');
+    }
+  </script>
+</body>
+</html>

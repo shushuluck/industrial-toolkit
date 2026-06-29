@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备手册文档站 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>📚 设备手册文档站</h2><p>常见 PLC / 变频器 / 伺服手册快速入口</p></div>
+    <div class="card">
+      <div class="search-box"><input type="text" id="search" placeholder="搜索品牌或型号..." oninput="filterDocs()"></div>
+      <div style="margin-top:10px;" id="brandBar"></div>
+    </div>
+    <div id="docList"></div>
+  </div>
+  <div class="footer">工控工具箱 — 设备手册文档站</div>
+  <script src="../js/common.js"></script>
+  <script>
+    const docs=[
+      {brand:'西门子',category:'PLC',items:[
+        {name:'S7-1200 系统手册',desc:'CPU 1211C/1212C/1214C/1215C/1217C 完整技术参数',url:'https://support.industry.siemens.com/cs/document/109799965'},
+        {name:'S7-1500 系统手册',desc:'高性能 CPU 系列，含 ET200SP/MP',url:'https://support.industry.siemens.com/cs/document/109478424'},
+        {name:'TIA Portal V18 操作手册',desc:'编程软件完整操作指南',url:'https://support.industry.siemens.com/cs/document/109822762'},
+        {name:'S7-200 SMART 手册',desc:'经济型 PLC，替代 S7-200',url:'https://support.industry.siemens.com/cs/document/109478591'},
+      ]},
+      {brand:'三菱',category:'PLC',items:[
+        {name:'FX5U 用户手册',desc:'MELSEC iQ-F 系列 CPU',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/index.html'},
+        {name:'GX Works3 操作手册',desc:'编程软件操作指南',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/gx_works3.html'},
+        {name:'FX3U 硬件手册',desc:'FX3U系列基本单元',url:'https://www.mitsubishielectric.com/fa/products/cnt/plcf/pmerit/fx3u.html'},
+      ]},
+      {brand:'欧姆龙',category:'PLC',items:[
+        {name:'NX/NJ 系列编程手册',desc:'Sysmac 平台运动控制',url:'https://www.ia.omron.com/products/family/3624/'},
+        {name:'CP1E/CP1L/CP1H 手册',desc:'紧凑型 PLC 系列',url:'https://www.ia.omron.com/products/family/2401/'},
+      ]},
+      {brand:'AB (罗克韦尔)',category:'PLC',items:[
+        {name:'CompactLogix 5380 手册',desc:'高性能紧凑型控制器',url:'https://literature.rockwellautomation.com/'},
+        {name:'Micro800 系列手册',desc:'经济型控制器',url:'https://literature.rockwellautomation.com/'},
+        {name:'Studio 5000 操作手册',desc:'编程环境完整指南',url:'https://literature.rockwellautomation.com/'},
+      ]},
+      {brand:'台达',category:'PLC',items:[
+        {name:'DVP 系列编程手册',desc:'DVP-SS/SA/SX/SL/EH 系列',url:'https://www.deltaww.com/products/automation'},
+        {name:'AS300 系列手册',desc:'中型 PLC',url:'https://www.deltaww.com/products/automation'},
+      ]},
+      {brand:'汇川',category:'PLC',items:[
+        {name:'H5U 系列手册',desc:'高性能运动控制器',url:'https://www.inovance.com/product/42'},
+        {name:'AM600 系列手册',desc:'中型 PLC',url:'https://www.inovance.com/product/42'},
+      ]},
+      {brand:'西门子',category:'变频器',items:[
+        {name:'G120 操作手册',desc:'模块化变频器 0.37-250kW',url:'https://support.industry.siemens.com/cs/document/109478870'},
+        {name:'V20 操作手册',desc:'紧凑型变频器 0.12-30kW',url:'https://support.industry.siemens.com/cs/document/109478560'},
+        {name:'S120 操作手册',desc:'高性能伺服驱动系统',url:'https://support.industry.siemens.com/cs/document/109478840'},
+      ]},
+      {brand:'ABB',category:'变频器',items:[
+        {name:'ACS580 手册',desc:'通用型变频器 0.75-500kW',url:'https://library.e.abb.com/'},
+        {name:'ACS880 手册',desc:'工业传动 0.55-5600kW',url:'https://library.e.abb.com/'},
+      ]},
+      {brand:'安川',category:'伺服',items:[
+        {name:'Σ-7 系列手册',desc:'高性能伺服驱动',url:'https://www.yaskawa.com/downloads/search'},
+        {name:'Σ-V 系列手册',desc:'经典伺服驱动',url:'https://www.yaskawa.com/downloads/search'},
+      ]},
+      {brand:'汇川',category:'变频器',items:[
+        {name:'MD500 系列手册',desc:'高性能矢量变频器',url:'https://www.inovance.com/product/41'},
+        {name:'IS810 系列手册',desc:'伺服驱动器',url:'https://www.inovance.com/product/40'},
+      ]},
+    ];
+    let activeBrand='';
+    function renderBrands(){
+      let brands=[...new Set(docs.map(d=>d.brand))];
+      let html=`<span class="tag" onclick="setBrand('')" style="${activeBrand===''?'background:var(--primary);color:#000;':''}">全部</span>`;
+      html+=brands.map(b=>`<span class="tag" onclick="setBrand('${b}')" style="${activeBrand===b?'background:var(--primary);color:#000;':''}">${b}</span>`).join('');
+      document.getElementById('brandBar').innerHTML=html;
+    }
+    function setBrand(b){activeBrand=b;renderBrands();filterDocs();}
+    function filterDocs(){
+      let q=document.getElementById('search').value.toLowerCase();
+      let filtered=docs.filter(d=>{
+        let matchBrand=!activeBrand||d.brand===activeBrand;
+        let matchSearch=!q||d.brand.toLowerCase().includes(q)||d.items.some(i=>i.name.toLowerCase().includes(q)||i.desc.toLowerCase().includes(q));
+        return matchBrand&&matchSearch;
+      });
+      renderDocs(filtered);
+    }
+    function renderDocs(list){
+      let html=list.map(d=>`
+        <div class="card">
+          <div class="card-title">${d.brand} <span class="badge badge-${d.category==='PLC'?'primary':d.category==='变频器'?'accent':'success'}">${d.category}</span></div>
+          ${d.items.map(i=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+            <div><div style="font-weight:500;">${i.name}</div><div style="font-size:12px;color:var(--text-dim);">${i.desc}</div></div>
+            <a href="${i.url}" target="_blank" class="btn btn-outline btn-sm">📄 查看手册</a>
+          </div>`).join('')}
+        </div>
+      `).join('');
+      document.getElementById('docList').innerHTML=html;
+    }
+    renderBrands();
+    renderDocs(docs);
+  </script>
+</body>
+</html>

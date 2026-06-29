@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLC代码片段库 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>📋 PLC 代码片段库</h2><p>常用梯形图 / ST / SCL 代码片段，标签分类，一键复制</p></div>
+    <div class="card">
+      <div class="search-box"><input type="text" id="search" placeholder="搜索代码片段..." oninput="filterSnippets()"></div>
+      <div style="margin-top:10px;" id="tagBar"></div>
+    </div>
+    <div id="snippetList"></div>
+  </div>
+  <div class="footer">工控工具箱 — PLC 代码片段库</div>
+  <script src="../js/common.js"></script>
+  <script>
+    const snippets=[
+      {title:'启保停电路 (ST)',tags:['基础','ST','启停'],lang:'iecst',code:`// 启保停电路 - 自锁回路
+// I0.0=启动按钮, I0.1=停止按钮, Q0.0=输出
+IF I0.0 OR Q0.0 THEN
+    IF NOT I0.1 THEN
+        Q0.0 := TRUE;
+    ELSE
+        Q0.0 := FALSE;
+    END_IF;
+END_IF;`},
+      {title:'定时器 TON (ST)',tags:['定时器','ST','基础'],lang:'iecst',code:`// 延时接通定时器 (TON)
+VAR
+    TON1 : TON;
+    Start : BOOL;
+    Output : BOOL;
+END_VAR
+
+TON1(IN := Start, PT := T#5S);
+Output := TON1.Q;  // 5秒后接通`},
+      {title:'定时器 TOF (ST)',tags:['定时器','ST'],lang:'iecst',code:`// 延时断开定时器 (TOF)
+VAR
+    TOF1 : TOF;
+    Trigger : BOOL;
+    Output : BOOL;
+END_VAR
+
+TOF1(IN := Trigger, PT := T#3S);
+Output := TOF1.Q;  // 触发断开后保持3秒`},
+      {title:'计数器 CTU (ST)',tags:['计数器','ST','基础'],lang:'iecst',code:`// 加计数器 (CTU)
+VAR
+    CTU1 : CTU;
+    Pulse : BOOL := FALSE;
+    Reset : BOOL;
+    Count : INT;
+END_VAR
+
+CTU1(CU := Pulse, R := Reset, PV := 10);
+Count := CTU1.CV;      // 当前计数值
+// CTU1.Q 当 CV >= PV 时为 TRUE`},
+      {title:'PID 控制器 (ST)',tags:['PID','ST','高级'],lang:'iecst',code:`// PID 控制器 - 通用模板
+VAR
+    PID1 : PID;
+    Setpoint : REAL := 50.0;   // 设定值
+    Feedback : REAL;            // 反馈值
+    Output : REAL;              // 控制输出
+    Kp : REAL := 1.0;
+    Ki : REAL := 0.5;
+    Kd : REAL := 0.1;
+END_VAR
+
+PID1(
+    AUTO   := TRUE,
+    PV     := Feedback,
+    SP     := Setpoint,
+    KP     := Kp,
+    TR     := Ki,   // 积分时间
+    TD     := Kd,   // 微分时间
+    YMAN   := 0.0,
+    CYCLE  := T#100MS
+);
+Output := PID1.Y;`},
+      {title:'模拟量线性转换 (ST)',tags:['模拟量','ST','基础'],lang:'iecst',code:`// 模拟量输入线性转换 (4-20mA → 工程值)
+// RawValue: 原始ADC值 (0-27648 for S7-1200)
+// EngValue: 工程值 (如 0-100°C)
+FUNCTION ScaleAI : REAL
+VAR_INPUT
+    RawValue : INT;
+    EngMin : REAL;    // 工程值下限
+    EngMax : REAL;    // 工程值上限
+    RawMin : INT := 0;      // 原始值下限
+    RawMax : INT := 27648;  // 原始值上限
+END_VAR
+
+ScaleAI := (INT_TO_REAL(RawValue - RawMin) / 
+            INT_TO_REAL(RawMax - RawMin)) 
+           * (EngMax - EngMin) + EngMin;`},
+      {title:'电机星三角启动 (ST)',tags:['电机','ST','常用'],lang:'iecst',code:`// 星三角启动 - 延时切换
+VAR
+    State : INT := 0;        // 0=停止,1=星形,2=三角
+    Timer1 : TON;            // 星形运行时间
+    StartBtn : BOOL;
+    StopBtn : BOOL;
+    ContactorStar : BOOL;    // Q0.0 星形接触器
+    ContactorDelta : BOOL;   // Q0.1 三角接触器
+END_VAR
+
+CASE State OF
+    0: // 停止
+        ContactorStar := FALSE;
+        ContactorDelta := FALSE;
+        IF StartBtn THEN State := 1; END_IF;
+    1: // 星形运行
+        ContactorStar := TRUE;
+        ContactorDelta := FALSE;
+        Timer1(IN := TRUE, PT := T#6S);
+        IF Timer1.Q THEN
+            Timer1(IN := FALSE, PT := T#0S);
+            State := 2;
+        END_IF;
+    2: // 三角运行
+        ContactorStar := FALSE;
+        ContactorDelta := TRUE;
+END_CASE;
+
+IF StopBtn THEN State := 0; END_IF;`},
+      {title:'数据记录 FIFO (ST)',tags:['数据处理','ST','高级'],lang:'iecst',code:`// FIFO 队列 - 环形缓冲区
+VAR
+    Buffer : ARRAY[0..99] OF REAL;
+    Head : INT := 0;
+    Tail : INT := 0;
+    Count : INT := 0;
+END_VAR
+
+// 写入
+PROCEDURE PushFIFO(Value : REAL)
+    Buffer[Head] := Value;
+    Head := (Head + 1) MOD 100;
+    IF Count < 100 THEN Count := Count + 1;
+    ELSE Tail := (Tail + 1) MOD 100; END_IF;
+END_PROCEDURE
+
+// 读取
+FUNCTION PopFIFO : REAL
+    IF Count > 0 THEN
+        PopFIFO := Buffer[Tail];
+        Tail := (Tail + 1) MOD 100;
+        Count := Count - 1;
+    END_IF;
+END_FUNCTION`},
+      {title:'RS485 通信轮询 (ST)',tags:['通信','ST','Modbus'],lang:'iecst',code:`// Modbus RTU 主站轮询状态机
+VAR
+    PollState : INT := 0;
+    SlaveID : BYTE := 1;
+    StartAddr : INT := 0;
+    NumRegs : INT := 10;
+    CommTimer : TON;
+    Timeout : BOOL;
+END_VAR
+
+CASE PollState OF
+    0: // 发送请求
+        SendReadRequest(SlaveID, StartAddr, NumRegs);
+        CommTimer(IN := TRUE, PT := T#1S);
+        PollState := 1;
+    1: // 等待响应
+        IF ResponseReceived THEN
+            ParseResponse();
+            CommTimer(IN := FALSE);
+            PollState := 2;
+        ELSIF CommTimer.Q THEN
+            Timeout := TRUE;
+            PollState := 0;
+        END_IF;
+    2: // 处理数据 + 短延时
+        ProcessData();
+        WaitTimer(IN := TRUE, PT := T#50MS);
+        IF WaitTimer.Q THEN PollState := 0; END_IF;
+END_CASE;`},
+      {title:'西门子 SCL 边沿检测',tags:['西门子','SCL','基础'],lang:'iecst',code:`// 上升沿检测 (SCL)
+VAR
+    InputSignal : BOOL;
+    RisingEdge : BOOL;
+    PrevState : BOOL := FALSE;
+END_VAR
+
+RisingEdge := InputSignal AND NOT PrevState;
+PrevState := InputSignal;
+
+// 下降沿检测
+// FallingEdge := NOT InputSignal AND PrevState;`},
+      {title:'三菱 ST 比较范围',tags:['三菱','ST','基础'],lang:'iecst',code:`// 数值范围判断
+// 判断温度是否在正常范围内
+VAR
+    Temperature : REAL;
+    LowLimit : REAL := 10.0;
+    HighLimit : REAL := 50.0;
+    InRange : BOOL;
+    HighAlarm : BOOL;
+    LowAlarm : BOOL;
+END_VAR
+
+InRange := (Temperature >= LowLimit) AND (Temperature <= HighLimit);
+HighAlarm := Temperature > HighLimit;
+LowAlarm := Temperature < LowLimit;`},
+      {title:'模拟量滤波 - 移动平均',tags:['模拟量','ST','滤波'],lang:'iecst',code:`// 一阶滞后滤波 (指数移动平均)
+// Alpha 越大响应越快，越小越平滑
+VAR
+    RawValue : REAL;
+    FilteredValue : REAL;
+    Alpha : REAL := 0.1;  // 滤波系数 0~1
+    FirstRun : BOOL := TRUE;
+END_VAR
+
+IF FirstRun THEN
+    FilteredValue := RawValue;
+    FirstRun := FALSE;
+ELSE
+    FilteredValue := Alpha * RawValue + (1.0 - Alpha) * FilteredValue;
+END_IF;`},
+    ];
+    let activeTag='';
+    function renderTags(){
+      let tags=[...new Set(snippets.flatMap(s=>s.tags))];
+      let html=`<span class="tag ${activeTag===''?'active':''}" onclick="setTag('')" style="${activeTag===''?'background:var(--primary);color:#000;':''}">全部</span>`;
+      html+=tags.map(t=>`<span class="tag ${activeTag===t?'active':''}" onclick="setTag('${t}')" style="${activeTag===t?'background:var(--primary);color:#000;':''}">${t}</span>`).join('');
+      document.getElementById('tagBar').innerHTML=html;
+    }
+    function setTag(t){activeTag=t;renderTags();filterSnippets();}
+    function filterSnippets(){
+      let q=document.getElementById('search').value.toLowerCase();
+      let filtered=snippets.filter(s=>{
+        let matchTag=!activeTag||s.tags.includes(activeTag);
+        let matchSearch=!q||s.title.toLowerCase().includes(q)||s.code.toLowerCase().includes(q)||s.tags.some(t=>t.toLowerCase().includes(q));
+        return matchTag&&matchSearch;
+      });
+      renderSnippets(filtered);
+    }
+    function renderSnippets(list){
+      let html=list.map(s=>`
+        <div class="card">
+          <div class="card-title">
+            ${s.title}
+            ${s.tags.map(t=>`<span class="badge badge-primary">${t}</span>`).join(' ')}
+          </div>
+          <div class="snippet" style="position:relative;">${escapeHtml(s.code)}<button class="copy-btn" onclick="copyText(this.parentElement.textContent.replace('复制','').trim(),this)" style="position:absolute;top:8px;right:8px;">复制</button></div>
+        </div>
+      `).join('');
+      document.getElementById('snippetList').innerHTML=html;
+    }
+    function escapeHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    renderTags();
+    renderSnippets(snippets);
+  </script>
+</body>
+</html>

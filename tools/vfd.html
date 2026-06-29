@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VFD选型计算器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>⚡ VFD 选型计算器</h2><p>变频器功率/电流换算、加减速时间、制动电阻选型</p></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🔋 功率 ↔ 电流换算</div>
+        <div class="input-group"><label>电压：</label><select id="voltage" onchange="calcPower()"><option value="220">单相 220V</option><option value="380" selected>三相 380V</option><option value="480">三相 480V</option><option value="660">三相 660V</option></select></div>
+        <div class="input-group"><label>功率：</label><input type="number" id="power" value="7.5" step="0.1" oninput="calcPower()" style="width:120px;"><span style="color:var(--text-dim)">kW</span></div>
+        <div class="input-group"><label>效率：</label><input type="number" id="eff" value="0.92" step="0.01" min="0.5" max="1" oninput="calcPower()" style="width:120px;"></div>
+        <div class="input-group"><label>功率因数：</label><input type="number" id="pf" value="0.85" step="0.01" min="0.5" max="1" oninput="calcPower()" style="width:120px;"></div>
+        <div style="margin-top:12px;">
+          <table>
+            <tr><td style="color:var(--text-dim);width:120px;">额定电流</td><td id="r-current" style="font-family:var(--mono);color:var(--primary);font-size:18px;font-weight:bold;">-</td></tr>
+            <tr><td style="color:var(--text-dim);">建议选型</td><td id="r-select" style="font-family:var(--mono);">-</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⏱ 加减速时间计算</div>
+        <div class="input-group"><label>电机功率：</label><input type="number" id="mPower" value="7.5" step="0.1" style="width:120px;"><span style="color:var(--text-dim)">kW</span></div>
+        <div class="input-group"><label>电机转速：</label><input type="number" id="mRPM" value="1450" step="10" style="width:120px;"><span style="color:var(--text-dim)">rpm</span></div>
+        <div class="input-group"><label>负载惯量：</label><input type="number" id="mInertia" value="0.5" step="0.1" style="width:120px;"><span style="color:var(--text-dim)">倍 GD²</span></div>
+        <div class="input-group"><label>目标转速：</label><input type="number" id="mTarget" value="1450" step="10" style="width:120px;"><span style="color:var(--text-dim)">rpm</span></div>
+        <div class="input-group"><label>加速度：</label><input type="number" id="mAccel" value="100" step="10" style="width:120px;"><span style="color:var(--text-dim)">%</span></div>
+        <button class="btn btn-primary" onclick="calcAccel()" style="margin-top:8px;">计算加减速时间</button>
+        <table style="margin-top:12px;">
+          <tr><td style="color:var(--text-dim);width:120px;">加速时间</td><td id="r-accel" style="font-family:var(--mono);">-</td></tr>
+          <tr><td style="color:var(--text-dim);">减速时间</td><td id="r-decel" style="font-family:var(--mono);">-</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔥 制动电阻选型</div>
+      <div class="grid-2">
+        <div>
+          <div class="input-group"><label>电机功率：</label><input type="number" id="brPower" value="7.5" step="0.1" style="width:120px;"><span style="color:var(--text-dim)">kW</span></div>
+          <div class="input-group"><label>制动转矩：</label><input type="number" id="brTorque" value="100" step="10" style="width:120px;"><span style="color:var(--text-dim)">%</span></div>
+          <div class="input-group"><label>占空比：</label><input type="number" id="brDuty" value="10" step="1" style="width:120px;"><span style="color:var(--text-dim)">%</span></div>
+          <div class="input-group"><label>母线电压：</label><input type="number" id="brVdc" value="540" step="10" style="width:120px;"><span style="color:var(--text-dim)">V</span></div>
+          <button class="btn btn-primary" onclick="calcBrake()" style="margin-top:8px;">计算制动电阻</button>
+        </div>
+        <div>
+          <table>
+            <tr><td style="color:var(--text-dim);width:120px;">制动功率</td><td id="r-brPower" style="font-family:var(--mono);">-</td></tr>
+            <tr><td style="color:var(--text-dim);">电阻阻值</td><td id="r-brRes" style="font-family:var(--mono);">-</td></tr>
+            <tr><td style="color:var(--text-dim);">最低阻值</td><td id="r-brMin" style="font-family:var(--mono);">-</td></tr>
+            <tr><td style="color:var(--text-dim);">推荐规格</td><td id="r-brSpec" style="font-family:var(--mono);font-size:12px;">-</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 标准电机参数速查</div>
+      <table>
+        <tr><th>功率(kW)</th><th>极数</th><th>同步转速</th><th>额定电流(A) 380V</th><th>建议变频器</th></tr>
+        <tr><td>0.75</td><td>4</td><td>1500</td><td>2.0</td><td>0.75kW</td></tr>
+        <tr><td>1.5</td><td>4</td><td>1500</td><td>3.7</td><td>1.5kW</td></tr>
+        <tr><td>2.2</td><td>4</td><td>1500</td><td>5.0</td><td>2.2kW</td></tr>
+        <tr><td>3.7</td><td>4</td><td>1500</td><td>8.0</td><td>3.7kW</td></tr>
+        <tr><td>5.5</td><td>4</td><td>1500</td><td>11.6</td><td>5.5kW</td></tr>
+        <tr><td>7.5</td><td>4</td><td>1500</td><td>15.4</td><td>7.5kW</td></tr>
+        <tr><td>11</td><td>4</td><td>1500</td><td>22.6</td><td>11kW</td></tr>
+        <tr><td>15</td><td>4</td><td>1500</td><td>30.3</td><td>15kW</td></tr>
+        <tr><td>18.5</td><td>4</td><td>1500</td><td>36.8</td><td>18.5kW</td></tr>
+        <tr><td>22</td><td>4</td><td>1500</td><td>43.1</td><td>22kW</td></tr>
+        <tr><td>30</td><td>4</td><td>1500</td><td>58.5</td><td>30kW</td></tr>
+        <tr><td>37</td><td>4</td><td>1500</td><td>71.6</td><td>37kW</td></tr>
+        <tr><td>45</td><td>4</td><td>1500</td><td>86.5</td><td>45kW</td></tr>
+        <tr><td>55</td><td>4</td><td>1500</td><td>105</td><td>55kW</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — VFD 选型计算器</div>
+  <script src="../js/common.js"></script>
+  <script>
+    function calcPower(){
+      let P=parseFloat(document.getElementById('power').value);
+      let V=parseInt(document.getElementById('voltage').value);
+      let eff=parseFloat(document.getElementById('eff').value);
+      let pf=parseFloat(document.getElementById('pf').value);
+      let is3ph=V>=380;
+      let I=is3ph?(P*1000)/(Math.sqrt(3)*V*eff*pf):(P*1000)/(V*eff*pf);
+      document.getElementById('r-current').textContent=I.toFixed(1)+' A';
+      let sizes=[0.4,0.75,1.5,2.2,3.7,5.5,7.5,11,15,18.5,22,30,37,45,55,75,90,110,132,160,200,250,315,400];
+      let select=sizes.find(s=>s>=P*1.2)||P*1.5;
+      document.getElementById('r-select').textContent=select+'kW 或以上 (建议1.2倍裕量)';
+    }
+    function calcAccel(){
+      let P=parseFloat(document.getElementById('mPower').value);
+      let rpm=parseFloat(document.getElementById('mRPM').value);
+      let J=parseFloat(document.getElementById('mInertia').value);
+      let target=parseFloat(document.getElementById('mTarget').value);
+      let accelPct=parseFloat(document.getElementById('mAccel').value)/100;
+      let Tn=9550*P/rpm;
+      let Ta=Tn*accelPct;
+      let w=target*2*Math.PI/60;
+      let GD2=J*4*P*1000/(rpm*rpm)*9.55*9.55;
+      let t=GD2*rpm/(375*Ta);
+      document.getElementById('r-accel').textContent=t.toFixed(2)+' s';
+      document.getElementById('r-decel').textContent=(t*0.8).toFixed(2)+' s (自然减速约80%)';
+    }
+    function calcBrake(){
+      let P=parseFloat(document.getElementById('brPower').value);
+      let torque=parseFloat(document.getElementById('brTorque').value)/100;
+      let duty=parseFloat(document.getElementById('brDuty').value)/100;
+      let Vdc=parseFloat(document.getElementById('brVdc').value);
+      let Pbrake=P*torque*duty;
+      let R=Vdc*Vdc/(P*torque*1000);
+      let Rmin=Vdc*Vdc/(P*1000*1.5);
+      document.getElementById('r-brPower').textContent=Pbrake.toFixed(2)+' kW';
+      document.getElementById('r-brRes').textContent=R.toFixed(1)+' Ω';
+      document.getElementById('r-brMin').textContent=Rmin.toFixed(1)+' Ω';
+      let Rstd=[10,15,20,25,30,40,50,60,75,80,100,120,150,200,250];
+      let found=Rstd.find(r=>r>=R&&r<=R*2);
+      document.getElementById('r-brSpec').textContent=found?found+'Ω / '+(Pbrake*1000).toFixed(0)+'W (选标准化阻值)':'非标，需定制';
+    }
+    calcPower();
+  </script>
+</body>
+</html>

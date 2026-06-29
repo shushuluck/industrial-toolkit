@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PID参数调试器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>📈 PID 参数调试器</h2><p>输入 Kp / Ki / Kd 参数，实时绘制阶跃响应曲线</p></div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">🎛 PID 参数</div>
+        <div class="input-group"><label>Kp：</label><input type="number" id="kp" value="1.0" step="0.1" min="0" oninput="simulate()" style="width:120px;"></div>
+        <div class="input-group"><label>Ki：</label><input type="number" id="ki" value="0.5" step="0.01" min="0" oninput="simulate()" style="width:120px;"></div>
+        <div class="input-group"><label>Kd：</label><input type="number" id="kd" value="0.1" step="0.01" min="0" oninput="simulate()" style="width:120px;"></div>
+        <div class="input-group"><label>设定值：</label><input type="number" id="sp" value="100" step="10" oninput="simulate()" style="width:120px;"></div>
+        <div class="input-group"><label>延迟：</label><input type="number" id="delay" value="5" step="1" min="0" oninput="simulate()" style="width:120px;"><span style="color:var(--text-dim);font-size:12px;">步</span></div>
+        <div class="input-group"><label>噪声：</label><input type="number" id="noise" value="0" step="0.5" min="0" max="20" oninput="simulate()" style="width:120px;"><span style="color:var(--text-dim);font-size:12px;">%</span></div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="simulate()">▶ 运行仿真</button>
+          <button class="btn btn-outline" onclick="resetParams()">↺ 重置</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 仿真参数</div>
+        <table>
+          <tr><td style="color:var(--text-dim);">上升时间</td><td id="s-rise" style="font-family:var(--mono);">-</td></tr>
+          <tr><td style="color:var(--text-dim);">超调量</td><td id="s-overshoot" style="font-family:var(--mono);">-</td></tr>
+          <tr><td style="color:var(--text-dim);">调节时间(2%)</td><td id="s-settle" style="font-family:var(--mono);">-</td></tr>
+          <tr><td style="color:var(--text-dim);">稳态误差</td><td id="s-sserr" style="font-family:var(--mono);">-</td></tr>
+          <tr><td style="color:var(--text-dim);">峰值</td><td id="s-peak" style="font-family:var(--mono);">-</td></tr>
+          <tr><td style="color:var(--text-dim);">积分误差(IAE)</td><td id="s-iae" style="font-family:var(--mono);">-</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📈 阶跃响应曲线</div>
+      <canvas id="chart" height="300"></canvas>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-dim);">
+        <span style="color:#00d4ff;">■</span> 过程变量 PV &nbsp;
+        <span style="color:#ff6b35;">■</span> 设定值 SP &nbsp;
+        <span style="color:rgba(0,230,118,0.5);">■</span> 控制输出
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📋 常用 PID 参数模板</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm" onclick="loadPreset(0.8,0.2,0.05)">温度控制</button>
+        <button class="btn btn-outline btn-sm" onclick="loadPreset(2.0,1.0,0.3)">流量控制</button>
+        <button class="btn btn-outline btn-sm" onclick="loadPreset(1.5,0.5,0.1)">压力控制</button>
+        <button class="btn btn-outline btn-sm" onclick="loadPreset(3.0,0.1,0.5)">位置控制</button>
+        <button class="btn btn-outline btn-sm" onclick="loadPreset(0.5,0.05,0.02)">液位控制</button>
+      </div>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — PID 参数调试器</div>
+  <script src="../js/common.js"></script>
+  <script>
+    function loadPreset(p,i,d){document.getElementById('kp').value=p;document.getElementById('ki').value=i;document.getElementById('kd').value=d;simulate();}
+    function resetParams(){document.getElementById('kp').value=1;document.getElementById('ki').value=0.5;document.getElementById('kd').value=0.1;document.getElementById('sp').value=100;document.getElementById('delay').value=5;document.getElementById('noise').value=0;simulate();}
+    function simulate(){
+      let kp=parseFloat(document.getElementById('kp').value)||0;
+      let ki=parseFloat(document.getElementById('ki').value)||0;
+      let kd=parseFloat(document.getElementById('kd').value)||0;
+      let sp=parseFloat(document.getElementById('sp').value)||100;
+      let dly=parseInt(document.getElementById('delay').value)||0;
+      let noise=parseFloat(document.getElementById('noise').value)||0;
+      let dt=0.1,T=50,steps=Math.floor(T/dt);
+      let pv=0,integral=0,prevErr=0;
+      let pvArr=[],spArr=[],outArr=[];
+      let delayBuf=new Array(dly).fill(0);
+      for(let i=0;i<steps;i++){
+        let t=i*dt;
+        let err=sp-pv;
+        integral+=err*dt;
+        integral=Math.max(-500,Math.min(500,integral));
+        let deriv=(err-prevErr)/dt;
+        let out=kp*err+ki*integral+kd*deriv;
+        out=Math.max(0,Math.min(200,out));
+        delayBuf.push(out);
+        let delayed=delayBuf[i]||0;
+        pv+=delayed*dt*0.02;
+        if(noise>0)pv+=((Math.random()-0.5)*2*noise*sp/100);
+        prevErr=err;
+        pvArr.push(pv);spArr.push(sp);outArr.push(out);
+      }
+      drawChart(pvArr,spArr,outArr,steps,dt);
+      calcStats(pvArr,spArr,steps,dt);
+    }
+    function drawChart(pv,sp,out,steps,dt){
+      let canvas=document.getElementById('chart');
+      let ctx=canvas.getContext('2d');
+      canvas.width=canvas.offsetWidth*2;canvas.height=600;
+      ctx.scale(2,2);
+      let W=canvas.offsetWidth,H=300;
+      ctx.clearRect(0,0,W,H);
+      let maxVal=Math.max(...pv,...sp,...out)*1.2||100;
+      let pad={l:50,r:20,t:20,b:30};
+      let gW=W-pad.l-pad.r,gH=H-pad.t-pad.b;
+      ctx.strokeStyle='#2d3f54';ctx.lineWidth=0.5;
+      for(let i=0;i<=5;i++){let y=pad.t+gH*i/5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+        ctx.fillStyle='#556677';ctx.font='10px sans-serif';ctx.textAlign='right';ctx.fillText((maxVal*(1-i/5)).toFixed(0),pad.l-5,y+3);}
+      for(let i=0;i<=10;i++){let x=pad.l+gW*i/10;ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();
+        ctx.fillStyle='#556677';ctx.textAlign='center';ctx.fillText((steps*dt*i/10).toFixed(0)+'s',x,H-pad.b+15);}
+      function drawLine(arr,color){ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();for(let i=0;i<arr.length;i+=3){let x=pad.l+i/steps*gW;let y=pad.t+(1-arr[i]/maxVal)*gH;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();}
+      drawLine(sp,'#ff6b35');drawLine(out,'rgba(0,230,118,0.4)');drawLine(pv,'#00d4ff');
+    }
+    function calcStats(pv,sp,steps,dt){
+      let spVal=sp[0];
+      let rise10=pv.findIndex(v=>v>=spVal*0.1);let rise90=pv.findIndex(v=>v>=spVal*0.9);
+      document.getElementById('s-rise').textContent=(rise10>=0&&rise90>=0)?((rise90-rise10)*dt).toFixed(2)+'s':'-';
+      let peak=Math.max(...pv);
+      let overshoot=spVal>0?((peak-spVal)/spVal*100):0;
+      document.getElementById('s-overshoot').textContent=overshoot.toFixed(1)+'%';
+      document.getElementById('s-peak').textContent=peak.toFixed(2);
+      let settle='-';
+      for(let i=steps-1;i>=0;i--){if(Math.abs(pv[i]-spVal)>spVal*0.02){settle=((i+1)*dt).toFixed(2)+'s';break;}if(i===0)settle='0s';}
+      document.getElementById('s-settle').textContent=settle;
+      let sse=Math.abs(pv[pv.length-1]-spVal);
+      document.getElementById('s-sserr').textContent=sse.toFixed(4);
+      let iae=pv.reduce((s,v,i)=>s+Math.abs(v-sp[i])*dt,0);
+      document.getElementById('s-iae').textContent=iae.toFixed(2);
+    }
+    window.addEventListener('resize',simulate);
+    simulate();
+  </script>
+</body>
+</html>

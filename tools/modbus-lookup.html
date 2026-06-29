@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modbus地址速查 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>🔍 Modbus 地址速查</h2><p>常见设备 Modbus 寄存器地址映射表</p></div>
+    <div class="card">
+      <div class="input-group">
+        <label>设备类型：</label>
+        <select id="deviceType" onchange="updateDevice()">
+          <option value="">选择设备类型...</option>
+          <option value="vfd-common">通用变频器</option>
+          <option value="power-meter">电力仪表</option>
+          <option value="temp-controller">温控表</option>
+          <option value="plc-common">PLC 常见映射</option>
+          <option value="pressure-transmitter">压力变送器</option>
+          <option value="flow-meter">流量计</option>
+        </select>
+      </div>
+    </div>
+    <div id="addrTable"></div>
+    <div class="card">
+      <div class="card-title">📖 Modbus 寄存器类型说明</div>
+      <table>
+        <tr><th>类型</th><th>功能码</th><th>PLC地址范围</th><th>读写</th><th>说明</th></tr>
+        <tr><td><span class="badge badge-primary">线圈 Coil</span></td><td>01读/05写</td><td>00001-09999</td><td>读写</td><td>1bit，开关量输出</td></tr>
+        <tr><td><span class="badge badge-accent">离散输入 DI</span></td><td>02读</td><td>10001-19999</td><td>只读</td><td>1bit，开关量输入</td></tr>
+        <tr><td><span class="badge badge-success">输入寄存器 IR</span></td><td>04读</td><td>30001-39999</td><td>只读</td><td>16bit，模拟量输入</td></tr>
+        <tr><td><span class="badge badge-warn">保持寄存器 HR</span></td><td>03读/06/16写</td><td>40001-49999</td><td>读写</td><td>16bit，参数设置</td></tr>
+      </table>
+      <div style="margin-top:12px;padding:12px;background:var(--bg);border-radius:6px;font-size:13px;color:var(--text-dim);">
+        <strong style="color:var(--primary);">💡 注意：</strong>
+        PLC 地址是从 1 开始的（如 40001），而 Modbus 协议地址从 0 开始。
+        所以 40001 对应协议地址 0x0000，40010 对应 0x0009。
+      </div>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — Modbus 地址速查</div>
+  <script src="../js/common.js"></script>
+  <script>
+    const devices={
+      'vfd-common':{
+        name:'通用变频器 (兼容西门子V20/汇川MD500/台达VFD)',
+        registers:[
+          {addr:'40001',hex:'0x0000',desc:'控制字 (CZ)',func:'03/06',note:'0x0006=停止, 0x0007=正转, 0x000F=点动'},
+          {addr:'40002',hex:'0x0001',desc:'频率设定',func:'03/06',note:'0-10000 对应 0.00-50.00Hz'},
+          {addr:'40003',hex:'0x0002',desc:'运行状态字',func:'03',note:'只读，bit0=运行,bit1=反转'},
+          {addr:'40004',hex:'0x0003',desc:'输出频率',func:'03',note:'实际输出频率 x100'},
+          {addr:'40005',hex:'0x0004',desc:'输出电流',func:'03',note:'实际输出电流 x100'},
+          {addr:'40006',hex:'0x0005',desc:'输出电压',func:'03',note:'实际输出电压 x10'},
+          {addr:'40007',hex:'0x0006',desc:'母线电压',func:'03',note:'DC母线电压'},
+          {addr:'40008',hex:'0x0007',desc:'故障码',func:'03',note:'当前故障代码'},
+          {addr:'40017',hex:'0x0010',desc:'加速时间1',func:'03/06',note:'单位 0.1s'},
+          {addr:'40018',hex:'0x0011',desc:'减速时间1',func:'03/06',note:'单位 0.1s'},
+          {addr:'40019',hex:'0x0012',desc:'最大频率',func:'03/06',note:'上限频率 x100'},
+        ]
+      },
+      'power-meter':{
+        name:'电力仪表 (安科瑞/多功能表)',
+        registers:[
+          {addr:'30001',hex:'0x0000',desc:'A相电压',func:'04',note:'单位V, 千分之一'},
+          {addr:'30003',hex:'0x0002',desc:'B相电压',func:'04',note:'单位V'},
+          {addr:'30005',hex:'0x0004',desc:'C相电压',func:'04',note:'单位V'},
+          {addr:'30007',hex:'0x0006',desc:'A相电流',func:'04',note:'单位A'},
+          {addr:'30009',hex:'0x0008',desc:'B相电流',func:'04',note:'单位A'},
+          {addr:'30011',hex:'0x000A',desc:'C相电流',func:'04',note:'单位A'},
+          {addr:'30013',hex:'0x000C',desc:'总有功功率',func:'04',note:'单位kW'},
+          {addr:'30015',hex:'0x000E',desc:'总无功功率',func:'04',note:'单位kvar'},
+          {addr:'30017',hex:'0x0010',desc:'总功率因数',func:'04',note:'x1000'},
+          {addr:'30019',hex:'0x0012',desc:'频率',func:'04',note:'Hz x100'},
+          {addr:'30021',hex:'0x0014',desc:'总有功电能',func:'04',note:'kWh, 32bit'},
+        ]
+      },
+      'temp-controller':{
+        name:'温控表 (宇电/欧陆/岛电)',
+        registers:[
+          {addr:'40001',hex:'0x0000',desc:'PV 过程值',func:'03',note:'当前温度 x10 或 x100'},
+          {addr:'40002',hex:'0x0001',desc:'SV 设定值',func:'03/06',note:'目标温度'},
+          {addr:'40003',hex:'0x0002',desc:'控制输出',func:'03',note:'输出百分比'},
+          {addr:'40004',hex:'0x0003',desc:'报警状态',func:'03',note:'bit0=AL1,bit1=AL2'},
+          {addr:'40005',hex:'0x0004',desc:'控制方式',func:'03/06',note:'0=ON/OFF, 1=PID'},
+          {addr:'40006',hex:'0x0005',desc:'Kp 比例带',func:'03/06',note:'PID比例系数'},
+          {addr:'40007',hex:'0x0006',desc:'Ti 积分时间',func:'03/06',note:'秒'},
+          {addr:'40008',hex:'0x0007',desc:'Td 微分时间',func:'03/06',note:'秒'},
+          {addr:'40009',hex:'0x0008',desc:'AL1 报警值',func:'03/06',note:'报警设定'},
+          {addr:'40010',hex:'0x0009',desc:'AL2 报警值',func:'03/06',note:'报警设定'},
+        ]
+      },
+      'plc-common':{
+        name:'PLC 常见 Modbus 映射 (西门子/三菱)',
+        registers:[
+          {addr:'00001-00128',hex:'-',desc:'Q0.0-Q15.7 线圈输出',func:'01/05/0F',note:'DO映射区'},
+          {addr:'10001-10128',hex:'-',desc:'I0.0-I15.7 离散输入',func:'02',note:'DI映射区'},
+          {addr:'30001-30064',hex:'-',desc:'IW0-IW126 输入字',func:'04',note:'模拟量输入'},
+          {addr:'40001-40064',hex:'-',desc:'MW0-MW126 保持寄存器',func:'03/06',note:'中间变量区'},
+          {addr:'40101-40200',hex:'-',desc:'DB1.DBW0-DBW198',func:'03/06/10',note:'DB块数据区'},
+        ]
+      },
+      'pressure-transmitter':{
+        name:'压力变送器 (横河/E+H)',
+        registers:[
+          {addr:'30001',hex:'0x0000',desc:'压力值 (主变量)',func:'04',note:'32bit浮点 IEEE754'},
+          {addr:'30003',hex:'0x0002',desc:'百分比量程',func:'04',note:'32bit浮点'},
+          {addr:'30005',hex:'0x0004',desc:'传感器温度',func:'04',note:'32bit浮点 (部分型号)'},
+          {addr:'30007',hex:'0x0006',desc:'量程上限',func:'04',note:'32bit浮点'},
+          {addr:'30009',hex:'0x0008',desc:'量程下限',func:'04',note:'32bit浮点'},
+        ]
+      },
+      'flow-meter':{
+        name:'流量计 (横河/E+H/科隆)',
+        registers:[
+          {addr:'30001',hex:'0x0000',desc:'瞬时流量',func:'04',note:'32bit浮点'},
+          {addr:'30003',hex:'0x0002',desc:'累积流量 (低32位)',func:'04',note:'32bit整数或浮点'},
+          {addr:'30005',hex:'0x0004',desc:'累积流量 (高32位)',func:'04',note:'64位累积量'},
+          {addr:'30007',hex:'0x0006',desc:'流体温度',func:'04',note:'32bit浮点'},
+          {addr:'30009',hex:'0x0008',desc:'流体密度',func:'04',note:'32bit浮点'},
+          {addr:'30011',hex:'0x000A',desc:'流速',func:'04',note:'m/s'},
+        ]
+      }
+    };
+    function updateDevice(){
+      let key=document.getElementById('deviceType').value;
+      if(!key){document.getElementById('addrTable').innerHTML='';return;}
+      let d=devices[key];
+      let html=`<div class="card"><div class="card-title">📋 ${d.name}</div><table>
+        <tr><th>PLC地址</th><th>协议地址</th><th>描述</th><th>功能码</th><th>备注</th></tr>
+        ${d.registers.map(r=>`<tr><td style="font-family:var(--mono);">${r.addr}</td><td style="font-family:var(--mono);">${r.hex}</td><td>${r.desc}</td><td><span class="badge badge-primary">${r.func}</span></td><td style="font-size:12px;color:var(--text-dim);">${r.note}</td></tr>`).join('')}
+      </table></div>`;
+      document.getElementById('addrTable').innerHTML=html;
+    }
+  </script>
+</body>
+</html>

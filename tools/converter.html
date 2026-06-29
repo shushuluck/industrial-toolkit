@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>进制/编码转换器 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>🔢 进制/编码转换器</h2><p>十进制 / 十六进制 / 二进制 / 八进制 / BCD / ASCII 实时互转</p></div>
+    <div class="card">
+      <div class="card-title">📝 输入数值</div>
+      <div class="input-group">
+        <label>输入：</label>
+        <input type="text" id="inputVal" placeholder="输入数值，如 255, 0xFF, 0b11111111" style="flex:1;" oninput="convert()">
+        <select id="inputBase" onchange="convert()">
+          <option value="auto">自动识别</option><option value="10">十进制</option><option value="16">十六进制</option><option value="2">二进制</option><option value="8">八进制</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">📊 数值转换</div>
+        <table>
+          <tr><td style="color:var(--text-dim);width:100px;">十进制 DEC</td><td><div class="result-box" id="r-dec"><button class="copy-btn" onclick="copyText(document.getElementById('r-dec').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">十六进制 HEX</td><td><div class="result-box" id="r-hex"><button class="copy-btn" onclick="copyText(document.getElementById('r-hex').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">二进制 BIN</td><td><div class="result-box" id="r-bin"><button class="copy-btn" onclick="copyText(document.getElementById('r-bin').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">八进制 OCT</td><td><div class="result-box" id="r-oct"><button class="copy-btn" onclick="copyText(document.getElementById('r-oct').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">BCD (8421)</td><td><div class="result-box" id="r-bcd"><button class="copy-btn" onclick="copyText(document.getElementById('r-bcd').textContent,this)">复制</button></div></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title">🔤 ASCII / 字节</div>
+        <table>
+          <tr><td style="color:var(--text-dim);width:100px;">ASCII 字符</td><td><div class="result-box" id="r-ascii"><button class="copy-btn" onclick="copyText(document.getElementById('r-ascii').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">单字节 HEX</td><td><div class="result-box" id="r-byte"><button class="copy-btn" onclick="copyText(document.getElementById('r-byte').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">WORD (16bit)</td><td><div class="result-box" id="r-word"><button class="copy-btn" onclick="copyText(document.getElementById('r-word').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">DWORD (32bit)</td><td><div class="result-box" id="r-dword"><button class="copy-btn" onclick="copyText(document.getElementById('r-dword').textContent,this)">复制</button></div></td></tr>
+          <tr><td style="color:var(--text-dim);">字节序</td><td><div class="toggle-group" style="margin-top:4px;"><button class="active" onclick="setEndian('big',this)">Big-Endian</button><button onclick="setEndian('little',this)">Little-Endian</button></div></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📦 批量转换</div>
+      <textarea id="batchInput" rows="4" placeholder="每行一个数值，支持混合进制输入，如：&#10;255&#10;0xFF&#10;0b10101010&#10;65"></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="batchConvert()">批量转换</button>
+        <select id="batchOutput"><option value="hex">输出 HEX</option><option value="dec">输出 DEC</option><option value="bin">输出 BIN</option></select>
+      </div>
+      <div class="result-box" id="batchResult" style="margin-top:10px;min-height:60px;white-space:pre;"></div>
+    </div>
+  </div>
+  <div class="footer">工控工具箱 — 进制/编码转换器</div>
+  <script src="../js/common.js"></script>
+  <script>
+    let endian='big';
+    function setEndian(e,btn){endian=e;btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');convert();}
+    function parseInput(){let s=document.getElementById('inputVal').value.trim();let base=document.getElementById('inputBase').value;if(!s)return NaN;if(base==='auto')return parseNumber(s);return parseInt(s,parseInt(base));}
+    function toBCD(n){if(n<0||n>9999)return '超出范围(0-9999)';return n.toString().split('').map(d=>parseInt(d).toString(2).padStart(4,'0')).join(' ');}
+    function toASCII(n){return(n>=32&&n<=126)?String.fromCharCode(n):'(不可打印)';}
+    function endianHex(n,bytes){let hex=n.toString(16).padStart(bytes*2,'0').toUpperCase();if(endian==='little')return hex.match(/../g).reverse().join(' ');return hex.match(/../g).join(' ');}
+    function convert(){
+      let n=parseInput();
+      if(isNaN(n)){['r-dec','r-hex','r-bin','r-oct','r-bcd','r-ascii','r-byte','r-word','r-dword'].forEach(id=>document.getElementById(id).textContent='');return;}
+      document.getElementById('r-dec').textContent=n.toString(10);
+      document.getElementById('r-hex').textContent='0x'+(n>>>0).toString(16).toUpperCase();
+      document.getElementById('r-bin').textContent='0b'+(n>>>0).toString(2);
+      document.getElementById('r-oct').textContent='0o'+(n>>>0).toString(8);
+      document.getElementById('r-bcd').textContent=toBCD(Math.abs(n));
+      document.getElementById('r-ascii').textContent=toASCII(n);
+      document.getElementById('r-byte').textContent=(n>=0&&n<=255)?endianHex(n,1):'(超出单字节)';
+      document.getElementById('r-word').textContent=(n>=0&&n<=65535)?endianHex(n,2):'(超出WORD)';
+      document.getElementById('r-dword').textContent=(n>=0&&n<=4294967295)?endianHex(n,4):'(超出DWORD)';
+    }
+    function batchConvert(){
+      let lines=document.getElementById('batchInput').value.split('\n').filter(l=>l.trim());
+      let fmt=document.getElementById('batchOutput').value;
+      let r=lines.map(l=>{let n=parseNumber(l.trim());if(isNaN(n))return l.trim()+' → 无效输入';if(fmt==='hex')return l.trim()+' → 0x'+(n>>>0).toString(16).toUpperCase();if(fmt==='dec')return l.trim()+' → '+n.toString(10);return l.trim()+' → 0b'+(n>>>0).toString(2);});
+      document.getElementById('batchResult').textContent=r.join('\n');
+    }
+  </script>
+</body>
+</html>

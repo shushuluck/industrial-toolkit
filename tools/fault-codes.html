@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>工控故障代码查询 | 工控工具箱</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="header">
+    <a class="header-title" href="../index.html"><span class="icon">🏭</span><div><h1>工控工具箱</h1><div class="subtitle">Industrial Toolkit</div></div></a>
+  </div>
+  <div class="container fade-in">
+    <a href="../index.html" class="back-link">← 返回主页</a>
+    <div class="tool-header"><h2>🚨 工控故障代码查询</h2><p>PLC / 变频器报警代码 → 原因分析 → 处理方法</p></div>
+    <div class="card">
+      <div class="search-box"><input type="text" id="search" placeholder="输入故障代码或关键词搜索..." oninput="filterFaults()"></div>
+      <div style="margin-top:10px;" id="brandBar"></div>
+    </div>
+    <div id="faultList"></div>
+  </div>
+  <div class="footer">工控工具箱 — 工控故障代码查询</div>
+  <script src="../js/common.js"></script>
+  <script>
+    const faults=[
+      {brand:'通用变频器',code:'OC',name:'过电流 (Over Current)',level:'严重',
+       cause:['加速时间太短','负载突变或卡死','电机电缆短路','变频器功率选型偏小','V/F曲线设置不当'],
+       fix:['延长加速时间','检查机械负载','检查电机和电缆绝缘','确认变频器容量匹配','调整V/F曲线']},
+      {brand:'通用变频器',code:'OV',name:'过电压 (Over Voltage)',level:'严重',
+       cause:['减速时间太短(再生制动)','输入电源电压偏高','负载惯量大产生回馈能量'],
+       fix:['延长减速时间','检查电源电压','加装制动电阻','使用直流母线共联']},
+      {brand:'通用变频器',code:'UV',name:'欠电压 (Under Voltage)',level:'警告',
+       cause:['输入电源电压偏低','电源瞬间掉电','电源线路接触不良'],
+       fix:['检查电源电压和稳定性','检查接线端子','启用瞬停再启动功能']},
+      {brand:'通用变频器',code:'OH',name:'过热 (Over Heat)',level:'警告',
+       cause:['环境温度过高','散热风扇故障','散热器灰尘堵塞','安装空间通风不良'],
+       fix:['检查环境温度(应<40°C)','清洁或更换风扇','清理散热器','改善通风']},
+      {brand:'通用变频器',code:'SC',name:'输出短路 (Short Circuit)',level:'严重',
+       cause:['电机电缆短路','电机绕组短路','变频器输出模块损坏'],
+       fix:['检查电机和电缆绝缘','用兆欧表测绝缘电阻','检查IGBT模块']},
+      {brand:'通用变频器',code:'OL',name:'过载 (Over Load)',level:'警告',
+       cause:['负载超过额定值','电机堵转','加减速时间太短','电子热继设置不当'],
+       fix:['检查实际负载','检查机械是否卡死','延长加减速时间','调整电子热继参数']},
+      {brand:'通用变频器',code:'EF',name:'外部故障 (External Fault)',level:'警告',
+       cause:['外部急停信号触发','外部热继动作','外部联锁保护动作'],
+       fix:['检查急停按钮状态','检查热继电器','检查外部联锁回路']},
+      {brand:'通用变频器',code:'GF',name:'接地故障 (Ground Fault)',level:'严重',
+       cause:['电机电缆对地短路','电机绕组对地绝缘下降','漏电流过大'],
+       fix:['检查电缆和电机绝缘','使用兆欧表测量','检查漏电保护设置']},
+      {brand:'西门子 S7',code:'SF (红色)',name:'系统故障',level:'严重',
+       cause:['硬件故障','程序错误','I/O模块故障','存储卡错误'],
+       fix:['查看诊断缓冲区','检查模块状态LED','检查程序语法','更换故障模块']},
+      {brand:'西门子 S7',code:'BF (红色)',name:'总线故障',level:'严重',
+       cause:['PROFINET/PROFIBUS通信中断','从站掉线','网线/电缆断开','IP地址冲突'],
+       fix:['检查网络连接','检查从站电源','更换网线','检查IP配置']},
+      {brand:'三菱 FX',code:'ERR LED闪烁',name:'CPU错误',level:'严重',
+       cause:['程序语法错误','看门狗定时器溢出','特殊适配器连接异常'],
+       fix:['用GX Works检查程序','检查扫描周期','检查适配器连接']},
+      {brand:'三菱 FX',code:'ALM',name:'电池报警',level:'警告',
+       cause:['备份电池电压低','电池寿命到期'],
+       fix:['更换电池(CR2032等)','注意更换时不能断电']},
+      {brand:'西门子 S7',code:'MAINT LED黄色',name:'维护提示',level:'信息',
+       cause:['模块到达维护周期','电池电量低','风扇需要更换'],
+       fix:['查看TIA诊断信息','更换电池','计划维护']},
+    ];
+    let activeBrand='';
+    function renderBrands(){
+      let brands=[...new Set(faults.map(f=>f.brand))];
+      let html=`<span class="tag" onclick="setBrand('')" style="${activeBrand===''?'background:var(--primary);color:#000;':''}">全部</span>`;
+      html+=brands.map(b=>`<span class="tag" onclick="setBrand('${b}')" style="${activeBrand===b?'background:var(--primary);color:#000;':''}">${b}</span>`).join('');
+      document.getElementById('brandBar').innerHTML=html;
+    }
+    function setBrand(b){activeBrand=b;renderBrands();filterFaults();}
+    function filterFaults(){
+      let q=document.getElementById('search').value.toLowerCase();
+      let filtered=faults.filter(f=>{
+        let matchBrand=!activeBrand||f.brand===activeBrand;
+        let text=`${f.code} ${f.name} ${f.cause.join(' ')} ${f.fix.join(' ')}`.toLowerCase();
+        let matchSearch=!q||text.includes(q);
+        return matchBrand&&matchSearch;
+      });
+      renderFaults(filtered);
+    }
+    function renderFaults(list){
+      let html=list.map(f=>{
+        let levelColor={严重:'danger',警告:'warn',信息:'primary'}[f.level]||'primary';
+        return `<div class="card">
+          <div class="card-title"><span style="font-size:20px;">⚠️</span> ${f.code} — ${f.name} <span class="badge badge-${levelColor}">${f.level}</span> <span class="badge badge-primary">${f.brand}</span></div>
+          <div class="grid-2">
+            <div>
+              <div style="font-weight:600;margin-bottom:6px;color:var(--danger);">🔍 可能原因：</div>
+              <ul style="margin-left:16px;font-size:13px;color:var(--text-dim);line-height:2;">
+                ${f.cause.map(c=>`<li>${c}</li>`).join('')}
+              </ul>
+            </div>
+            <div>
+              <div style="font-weight:600;margin-bottom:6px;color:var(--success);">🔧 处理方法：</div>
+              <ul style="margin-left:16px;font-size:13px;color:var(--text-dim);line-height:2;">
+                ${f.fix.map(c=>`<li>${c}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      document.getElementById('faultList').innerHTML=html||'<div class="card" style="text-align:center;color:var(--text-dim);">未找到匹配的故障代码</div>';
+    }
+    renderBrands();
+    renderFaults(faults);
+  </script>
+</body>
+</html>
