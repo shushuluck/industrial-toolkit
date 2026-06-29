@@ -25,13 +25,7 @@
     const snippets=[
       {title:'启保停电路 (ST)',tags:['基础','ST','启停'],lang:'iecst',code:`// 启保停电路 - 自锁回路
 // I0.0=启动按钮, I0.1=停止按钮, Q0.0=输出
-IF I0.0 OR Q0.0 THEN
-    IF NOT I0.1 THEN
-        Q0.0 := TRUE;
-    ELSE
-        Q0.0 := FALSE;
-    END_IF;
-END_IF;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
+Q0.0 := (I0.0 OR Q0.0) AND NOT I0.1;`,ladder:
 <line x1="10" y1="50" x2="80" y2="50" stroke="#00d4ff" stroke-width="2"/>
 <line x1="80" y1="35" x2="80" y2="65" stroke="#00d4ff" stroke-width="2"/><line x1="120" y1="35" x2="120" y2="65" stroke="#00d4ff" stroke-width="2"/>
 <line x1="120" y1="50" x2="220" y2="50" stroke="#00d4ff" stroke-width="2"/>
@@ -134,8 +128,8 @@ VAR
     Feedback : REAL;            // 反馈值
     Output : REAL;              // 控制输出
     Kp : REAL := 1.0;
-    Ki : REAL := 0.5;
-    Kd : REAL := 0.1;
+    TR : REAL := 2.0;   // 积分时间(s)
+    TD : REAL := 0.5;   // 微分时间(s)
 END_VAR
 
 PID1(
@@ -143,8 +137,8 @@ PID1(
     PV     := Feedback,
     SP     := Setpoint,
     KP     := Kp,
-    TR     := Ki,   // 积分时间
-    TD     := Kd,   // 微分时间
+    TR     := TR,   // 积分时间
+    TD     := TD,   // 微分时间
     YMAN   := 0.0,
     CYCLE  := T#100MS
 );
@@ -186,6 +180,7 @@ VAR_INPUT
     RawMax : INT := 27648;  // 原始值上限
 END_VAR
 
+// 注意：建议在调用前对RawValue做LIMIT限幅，避免溢出
 ScaleAI := (INT_TO_REAL(RawValue - RawMin) / 
             INT_TO_REAL(RawMax - RawMin)) 
            * (EngMax - EngMin) + EngMin;`,ladder:`<line x1="10" y1="15" x2="10" y2="105" stroke="#00d4ff" stroke-width="2"/><line x1="590" y1="15" x2="590" y2="105" stroke="#00d4ff" stroke-width="2"/>
@@ -220,6 +215,7 @@ CASE State OF
     0: // 停止
         ContactorStar := FALSE;
         ContactorDelta := FALSE;
+        Timer1(IN := FALSE);
         IF StartBtn THEN State := 1; END_IF;
     1: // 星形运行
         ContactorStar := TRUE;
@@ -313,8 +309,11 @@ VAR
     StartAddr : INT := 0;
     NumRegs : INT := 10;
     CommTimer : TON;
+    WaitTimer : TON;
     Timeout : BOOL;
 END_VAR
+
+// 注：SendReadRequest/ParseResponse/ProcessData/ResponseReceived为自定义通信程序块，需根据具体硬件平台实现
 
 CASE PollState OF
     0: // 发送请求
